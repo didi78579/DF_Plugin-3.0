@@ -1,0 +1,35 @@
+name: DF_Plugin-3.2
+version: '3.2-SNAPSHOT'
+main: cjs.DF_Plugin.DF_Main
+api-version: '1.21'
+
+commands:
+  df:
+    description: DarkForest main command.
+    usage: /<command> [subcommand]
+    aliases: [darkforest]
+
+  itemname:
+    description: 아이템의 이름을 변경합니다.
+    usage: /<command>
+    aliases: [iname]
+
+  ps:
+    description: 파일런 창고를 엽니다.
+    usage: /<command>
+    aliases: [ pylonstorage ]
+    permission: df.clan.storage
+
+permissions:
+  df.clan.storage:
+    description: 가문 창고를 열 수 있는 권한입니다.
+    default: true
+  df.admin.controlender:
+    description: 엔드 개방을 제어할 수 있는 권한입니다.
+    default: op
+  df.admin:
+    description: Grants access to all /dfadmin commands.
+    default: op
+  df.admin.game:
+    description: 게임을 시작하거나 종료할 수 있는 권한입니다.
+    default: op

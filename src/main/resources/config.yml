@@ -1,0 +1,259 @@
+# DarkForest 2.0 메인 설정 파일
+# 모든 플러그인 설정은 이 파일에서 관리됩니다.
+
+# ==================================================================
+# 게임 모드 프리셋 & 시스템 토글
+# ==================================================================
+game-mode: darkforest
+
+# ==================================================================
+# 각 주요 시스템의 활성화 여부를 제어합니다.
+# 게임 모드 프리셋에 의해 자동으로 변경될 수 있습니다.
+# ==================================================================
+system-toggles:
+  pylon: true
+  upgrade: true
+  events: true
+
+
+# ==================================================================
+# 인첸트 시스템 (Enchantment System)
+# ==================================================================
+enchanting: # 마석을 사용한 무작위 인챈트 부여
+  random-enchanting:
+    # 추가 인챈트가 붙을 확률 (0.0 ~ 1.0)
+    extra-enchant-chance: 0.10
+    # 저주가 붙을 확률 (0.0 ~ 1.0)
+    curse-chance: 0.01
+    # 부여될 수 있는 최대 인챈트 개수
+    max-enchantments: 8
+
+# ==================================================================
+# 강화 시스템 (Upgrade System)
+# ==================================================================
+upgrade:
+  # 강화 UI에 성공/실패/하락/파괴 확률을 표시할지 여부
+  show-success-chance: true
+  # 레벨별 강화 확률 설정 (success, failure, downgrade, destroy의 합은 1.0)
+  level-settings:
+    '0': { success: 0.90, failure: 0.10, downgrade: 0.0, destroy: 0.0 }
+    '1': { success: 0.80, failure: 0.20, downgrade: 0.0, destroy: 0.0 }
+    '2': { success: 0.70, failure: 0.30, downgrade: 0.0, destroy: 0.0 }
+    '3': { success: 0.60, failure: 0.40, downgrade: 0.0, destroy: 0.0 }
+    '4': { success: 0.50, failure: 0.50, downgrade: 0.0, destroy: 0.0 }
+    '5': { success: 0.50, failure: 0.40, downgrade: 0.08, destroy: 0.02 }
+    '6': { success: 0.50, failure: 0.35, downgrade: 0.10, destroy: 0.05 }
+    '7': { success: 0.50, failure: 0.25, downgrade: 0.15, destroy: 0.10 }
+    '8': { success: 0.50, failure: 0.10, downgrade: 0.20, destroy: 0.20 }
+    '9': { success: 0.50, failure: 0.0, downgrade: 0.0, destroy: 0.50 }
+  # 특수 능력 재사용 대기시간 설정
+  cooldown:
+
+  # ==================================================================
+  # 특수 능력 설정 (Special Abilities)
+  # charges: 0은 패시브, 1은 1회성 액티브, 2 이상은 충전식 액티브를 의미합니다.
+  # ==================================================================
+  special-abilities:
+    super_jump:       { cooldown: 10.0, charges: 1, details: { charge-time-seconds: 2.0, jump-velocity: 2.0 } }
+    double_jump:      { cooldown: 30.0, charges: 0, details: { dash-velocity-multiplier: 1.2, dash-y-velocity: 0.5 } }
+    supercharge:      { cooldown: 10.0, charges: 1, details: { charge-time-seconds: 5.0, charged-duration-seconds: 5.0, damage: 20.0, target-knockback-strength: 1.5, shooter-knockback-strength: 0.8 } }
+    passive_absorption: { cooldown: 0.0, charges: 0, details: { no-damage-delay-seconds: 20, regen-interval-seconds: 4, max-shields: 4 } }
+    laser_shot:       { cooldown: 0.0,  charges: 0, details: { required-level: 10, velocity-multiplier: 3.0, glow-duration-seconds: 10 } }
+    backflow:         { cooldown: 300.0, details: { effect-duration-seconds: 3.0, radius: 8.0, pull-strength: 2.5, normal-damage-per-second: 10.0, current-health-percent-damage: 60.0 } }
+    lightning_spear:  { cooldown: 0.1,  charges: 0, details: { max-charges: 5, stack-duration-seconds: 30.0, extra-physical-damage: 8.0, lightning-damage: 16.0, timeout-seconds: 10.0, orbit-radius: 1.9, sprint-orbit-radius: 1.5 } }
+    vampirism:        { cooldown: 90.0, charges: 1, details: { health-steal-percent: 40.0, damage-multiplier: 0.5 } }
+    shield_bash:      { cooldown: 75.0, charges: 1, details: { dash-strength: 4.0, shockwave-delay-ticks: 6, shockwave-radius-x: 3.0, shockwave-radius-y: 2.0, shockwave-radius-z: 3.0, launch-strength: 1.2 } }
+    stun:             { cooldown: 120.0, charges: 1, details: { duration-seconds: 1.5 } }
+    grappling_hook:   { cooldown: 120.0, charges: 4, details: { range: 30, pull-strength: 2.5 } }
+    grab:             { cooldown: 30.0, charges: 1, details: { pull-strength: 2.5, cast-velocity-multiplier: 3.0, cast-max-velocity: 10.0, upward-force: 1.2, max-pull-strength: 10.0 } }
+    cleansing:        { cooldown: 60.0, charges: 1, details: { shield-cooldown-seconds: 30 } }
+    regeneration:     { cooldown: 1.0,  charges: 0, details: { duration-seconds: 30, amplifier: 0 } }
+    totem_of_undying: { cooldown: 300.0 }
+
+  # ==================================================================
+  # 장비 종류별 강화 당 보너스 속성 설정
+  # ==================================================================
+  generic-bonuses:
+    chestplate: { health-per-level: 2.0 }
+    boots: { speed-multiplier-per-level: 0.05 }
+    leggings: { health-per-level: 2.0 }
+    helmet: { projectile-protection-per-level: 0.4, fire-protection-per-level: 0.4, blast-protection-per-level: 0.4 }
+    pickaxe: { efficiency-per-level: 0.5, unbreaking-per-level: 0.5 }
+    shovel: { efficiency-per-level: 0.5, unbreaking-per-level: 0.5 }
+    axe: { efficiency-per-level: 0.5, unbreaking-per-level: 0.5 }
+    hoe: { efficiency-per-level: 0.5, unbreaking-per-level: 0.5 }
+    bow: { passive-current-health-damage-percent-per-level: 1.5, passive-current-health-damage-max-percent: 15.0, passive-max-health-damage-percent-per-level: 1.5, passive-max-health-damage-max-percent: 15.0 }
+    crossbow: { damage-per-level: 0.5 }
+    trident: { slowness-duration-seconds: 3.0, slowness-level: 2, spread-radius: 3.0, spread-velocity-multiplier: 0.1, riptide-velocity-multiplier: 1.0 }
+    fishing_rod: { velocity-bonus-per-level: 0.4 }
+    shield: { unbreaking-per-level: 1.0 }
+    sword: { attack-speed-per-level: 0.3 }
+
+# ==================================================================
+# 파일런 시스템 (Pylon System)
+# ==================================================================
+pylon:
+  # 가문당 최대 파일런 설치 개수
+  max-pylons-per-clan: 4
+  # 파일런 설치 조건
+  installation:
+    # 해수면(y=63) 이하에만 설치 가능하도록 강제
+    require-below-sea-level: true
+    # 주 파일런 기반 블록 (BEACON을 활성화할 수 있는 블록이어야 합니다: IRON_BLOCK, GOLD_BLOCK, DIAMOND_BLOCK, EMERALD_BLOCK, NETHERITE_BLOCK)
+    main-core-base-material: "DIAMOND_BLOCK"
+    # 보조 파일런 기반 블록 (위와 동일)
+    auxiliary-core-base-material: "IRON_BLOCK"
+  # 파일런 주변 영역 효과 설정
+  area-effects:
+    # 효과 반경 (블록)
+    radius: 50
+    # 아군에게 이로운 효과(재생) 부여 활성화
+    ally-buff-enabled: true
+    # 적에게 해로운 효과(구속) 부여 활성화
+    enemy-debuff-enabled: true
+  # 파일런 상점 설정
+  shop:
+    recon-firework: # 정찰용 폭죽
+      cost-level: 50
+    return-scroll: # 귀환 주문서
+      cost-level: 30
+    magic-stone-exchange: # 마석 교환
+      cost-level: 40
+      gained: 128
+    upgrade-stone-exchange: # 강화석 교환
+      cost-level: 40
+      gained: 128
+    aux-core: # 보조 파일런 코어
+      cost-level: 100
+  # 팀원 모집
+  recruitment:
+    # 모집 방식: "select" 또는 "roulette"
+    mode: "roulette"
+    # 가문원 1명당 모집 비용 (다이아몬드)
+    cost-per-member: 64
+    # 가문 최대 인원수
+    max-members: 4
+    # 스탯이 없는(미평가) 플레이어를 모집 목록에 포함할지 여부
+    include-default-stats-players: false
+  # 사망 유예 및 부활
+  death-ban:
+    enabled: true
+    duration-minutes: 60
+    resurrection-cost-per-minute: 1
+  # 파일런 회수
+  retrieval:
+    cooldown-hours: 24
+    reinstall-duration-hours: 2
+  # 정찰 불꽃
+  recon-firework:
+    enabled: true
+    cooldown-hours: 12
+    return-duration-minutes: 1
+  # 선물 상자
+  giftbox:
+    cooldown-minutes: 5
+    min-reward-items: 1
+    max-reward-items: 10
+  # 파일런 기능 활성화 토글 (이전 features 섹션)
+  features:
+    storage: true
+    return-scroll: true
+    multi-core: true
+    clan-nether: true
+
+# ==================================================================
+# 사망 & 부활 (Death & Respawn)
+# ==================================================================
+death-timer:
+  enabled: true
+  time: 60 # 부활 대기시간 (분)
+# ==================================================================
+# 월드 & 게임 규칙 (World & Game Rules)
+# ==================================================================
+world:
+  border:
+    overworld-size: 20000
+    end-enabled: true
+    end-size: 1000
+  rules:
+    keep-inventory: true
+    location-info-disabled: true
+    phantom-disabled: true
+    # 플레이어 위치 좌표 막대 표시 여부 (1.20.5 이상)
+    locator-bar-disabled: true
+    enderchest-disabled: true
+    potion-limit: 4
+    # 월드 난이도 (PEACEFUL, EASY, NORMAL, HARD)
+    difficulty: HARD
+    # 금지할 포션 설정 (true: 금지)
+    banned-potions:
+      oozing: true
+      infested: true
+
+
+
+# ==================================================================
+# 아이템 & 레시피 (Items & Recipes)
+# ==================================================================
+items:
+  # 마석 조합 시 생성되는 개수
+  magic-stone-recipe-output: 4
+  notched-apple-recipe: true
+  op-enchant:
+    breach-disabled: true
+    thorns-disabled: true
+
+# ==================================================================
+# 보스 & 이벤트 (Bosses & Events)
+# ==================================================================
+boss-mob-strength:
+  ender_dragon: 3.0
+  wither: 3.0
+events:
+  
+  rift:
+    # 이벤트 활성화 여부
+    enabled: true
+    
+    cooldown-hours: 8
+    # 제단 생성 후 보급(알 파괴 가능)까지의 대기 시간 (시간)
+    spawn-delay-hours: 1
+    # 알을 파괴하는 데 걸리는 시간 (초)
+    break-duration-seconds: 8
+    # 알 파괴 후 제단이 사라지기까지의 시간 (분)
+    cleanup-delay-minutes: 1
+
+# ==================================================================
+# 엔드 이벤트 (End Event)
+# ==================================================================
+end-event:
+  # 엔드가 현재 열려있는지 여부 (플러그인이 관리하는 값이므로 직접 수정하지 마세요)
+  is-open: false
+  # 엔드가 열리도록 예약된 시간 (플러그인이 관리하는 값이므로 직접 수정하지 마세요)
+  scheduled-open-time: -1
+  # 엔더 드래곤 처치 후 보상 뿌리기 설정
+  rewards:
+    # 보상이 흩뿌려질 영역의 한 변의 길이 (중심 기준)
+    area-size: 100
+    # 보상이 드롭될 Y 좌표
+    drop-y-level: 200
+    # 드롭될 아이템 묶음(스택)의 최소/최대 크기
+    min-stack-size: 2
+    max-stack-size: 4
+    # 드롭될 총 아이템 개수의 최소/최대값
+    min-total-quantity: 1000
+    max-total-quantity: 2000
+  # 엔드 월드 붕괴 지연 시간 (분)
+  collapse-delay-minutes: 10
+
+# ==================================================================
+# 기타 유틸리티 (Misc. Utilities)
+# ==================================================================
+utility:
+
+  # 가문 채팅 접두사 활성화
+  clan-chat-prefix-enabled: true
+  # 킬 로그 메시지 활성화
+  kill-log-enabled: true
+  # 전체 채팅 비활성화
+  chat-disabled: true
