@@ -8,6 +8,7 @@ import cjs.DF_Plugin.upgrade.specialability.impl.SuperchargeAbility;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -32,6 +33,11 @@ public class BowProfile implements IUpgradeableProfile {
 
         double healthPercentage = Math.min(percentPerLevel * level, maxPercent);
         return List.of("§b적 체력에 비례한 추가 피해: " + String.format("%.1f", healthPercentage) + "%");
+    }
+
+    @Override
+    public List<String> getBaseStatsLore(org.bukkit.inventory.ItemStack item, int level, double baseValue) {
+        return new ArrayList<>(); // 도끼는 기본 스탯 로어를 표시하지 않음
     }
 
     @Override

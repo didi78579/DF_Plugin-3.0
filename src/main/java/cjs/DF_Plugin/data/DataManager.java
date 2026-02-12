@@ -6,6 +6,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.logging.Level;
 
 public abstract class DataManager {
     protected final DF_Main plugin;
@@ -40,8 +41,7 @@ public abstract class DataManager {
         try {
             getConfig().save(this.dataFile);
         } catch (IOException e) {
-            plugin.getLogger().severe("[데이터 관리] " + this.dataFile + " 파일에 저장할 수 없습니다.");
-            e.printStackTrace();
+            plugin.getLogger().log(Level.SEVERE, "[데이터 관리] " + this.dataFile + " 파일에 저장할 수 없습니다.", e);
         }
     }
 

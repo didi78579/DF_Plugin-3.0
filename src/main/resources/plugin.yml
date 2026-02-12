@@ -1,5 +1,5 @@
-name: DF_Plugin-3.2
-version: '3.2-SNAPSHOT'
+name: DF_Plugin-3.0
+version: '3.0-SNAPSHOT'
 main: cjs.DF_Plugin.DF_Main
 api-version: '1.21'
 
@@ -32,4 +32,7 @@ permissions:
     default: op
   df.admin.game:
     description: 게임을 시작하거나 종료할 수 있는 권한입니다.
+    default: op
+  df.admin.underworld:
+    description: 마계의 주인 이벤트를 제어할 수 있는 권한입니다.
     default: op

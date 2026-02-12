@@ -11,11 +11,9 @@ import org.bukkit.scoreboard.Team;
 
 public class PlayerTagManager {
 
-    private final DF_Main plugin;
     private final ClanManager clanManager;
 
     public PlayerTagManager(DF_Main plugin, ClanManager clanManager) {
-        this.plugin = plugin;
         this.clanManager = clanManager;
     }
 

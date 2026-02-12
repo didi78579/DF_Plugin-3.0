@@ -1,11 +1,11 @@
 package cjs.DF_Plugin.pylon.beacongui.shop;
 
 import cjs.DF_Plugin.DF_Main;
+import cjs.DF_Plugin.item.CustomItemFactory;
+import cjs.DF_Plugin.item.ItemBuilder;
 import cjs.DF_Plugin.pylon.clan.Clan;
-import cjs.DF_Plugin.upgrade.item.UpgradeItems;
+import cjs.DF_Plugin.item.UpgradeItems;
 import cjs.DF_Plugin.util.InventoryUtils;
-import cjs.DF_Plugin.util.item.ItemBuilder;
-import cjs.DF_Plugin.util.item.PylonItemFactory;
 import cjs.DF_Plugin.world.enchant.MagicStone;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -19,7 +19,6 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.FireworkMeta;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.concurrent.TimeUnit;
@@ -78,7 +77,7 @@ public class PylonShopManager {
 
         // 슬롯 2: 귀환 주문서
         int scrollCostLevel = config.getInt("pylon.shop.return-scroll.cost-level", 30);
-        gui.setItem(2, new ItemBuilder(PylonItemFactory.createReturnScroll())
+        gui.setItem(2, new ItemBuilder(CustomItemFactory.createReturnScroll())
                 .addLoreLine("")
                 .addLoreLine("§f가격: §a" + scrollCostLevel + " 레벨")
                 .withPDCString(SHOP_ITEM_KEY, "return_scroll")
@@ -115,11 +114,7 @@ public class PylonShopManager {
 
         // 슬롯 8: 보조 파일런 코어
         int auxCoreCostLevel = config.getInt("pylon.shop.aux-core.cost-level", 100);
-        ItemStack auxCore = new ItemStack(Material.BEACON);
-        ItemMeta auxCoreMeta = auxCore.getItemMeta();
-        auxCoreMeta.addEnchant(Enchantment.LURE, 1, true);
-        auxCoreMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
-        auxCore.setItemMeta(auxCoreMeta);
+        ItemStack auxCore = CustomItemFactory.createAuxiliaryPylonCore();
 
         gui.setItem(8, new ItemBuilder(auxCore)
                 .withName("§d보조 파일런 코어")
@@ -157,7 +152,7 @@ public class PylonShopManager {
                 break;
             case "return_scroll":
                 int scrollCostLevel = clickedItem.getItemMeta().getPersistentDataContainer().getOrDefault(SHOP_COST_KEY, PersistentDataType.INTEGER, 30);
-                handleExchangeWithLevels(player, scrollCostLevel, PylonItemFactory.createReturnScroll(), "귀환 주문서");
+                handleExchangeWithLevels(player, scrollCostLevel, CustomItemFactory.createReturnScroll(), "귀환 주문서");
                 break;
             case "magic_stone":
                 int enchantScrollCost = clickedItem.getItemMeta().getPersistentDataContainer().getOrDefault(SHOP_COST_KEY, PersistentDataType.INTEGER, 30);
@@ -191,7 +186,7 @@ public class PylonShopManager {
         }
 
         // 가문 대표 확인 후, 공통 교환 로직을 호출합니다.
-        handleExchangeWithLevels(player, cost, PylonItemFactory.createAuxiliaryCore(), "보조 파일런 코어");
+        handleExchangeWithLevels(player, cost, CustomItemFactory.createAuxiliaryPylonCore(), "보조 파일런 코어");
     }
 
     private void handleBuyRecon(Player player, int cost) {

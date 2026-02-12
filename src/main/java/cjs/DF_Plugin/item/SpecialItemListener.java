@@ -12,6 +12,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
@@ -19,14 +20,17 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
+import java.util.stream.Collectors;
 
+/**
+ * Handles all special behaviors and interactions related to custom items,
+ * such as applying bonus stats from Demon Souls and Dragon's Hearts.
+ */
 public class SpecialItemListener implements Listener {
 
     private final DF_Main plugin;
+    private record StatInfo(NamespacedKey key, String name, Material armorType) {}
     private final Random random = new Random();
 
     private static final int MAX_SOUL_USES = 10;
@@ -36,22 +40,26 @@ public class SpecialItemListener implements Listener {
         this.plugin = plugin;
     }
 
+    /**
+     * Handles custom drops when specific entities are killed.
+     * @param event The entity death event.
+     */
     @EventHandler
     public void onEntityDeath(EntityDeathEvent event) {
-        // 워든 처치 시 흑요석 포션 드롭
-        if (event.getEntity() instanceof Warden) {
+        if (event.getEntity() instanceof Warden && event.getEntity().getLastDamageCause() != null && event.getEntity().getLastDamageCause().getCause() == EntityDamageEvent.DamageCause.ENTITY_ATTACK) {
             event.getDrops().add(CustomItemFactory.createObsidianPotion());
         }
 
-        // 위더 처치 시
         if (event.getEntityType() == EntityType.WITHER) {
-            // 기존 드롭 아이템(네더의 별)을 제거합니다.
             event.getDrops().removeIf(item -> item.getType() == Material.NETHER_STAR);
-            // 위더 처치 시 악마의 영혼 드롭
             event.getDrops().add(CustomItemFactory.createDemonSoul());
         }
     }
 
+    /**
+     * Applies bonus damage from Dragon's Heart-enchanted weapons.
+     * @param event The damage event.
+     */
     @EventHandler
     public void onDamageByEntity(EntityDamageByEntityEvent event) {
         Player attacker = null;
@@ -62,15 +70,25 @@ public class SpecialItemListener implements Listener {
         }
 
         if (attacker != null) {
-            // 주 손에 든 아이템의 추가 공격력을 적용합니다.
-            ItemStack weapon = attacker.getInventory().getItemInMainHand();
-            if (CustomItemFactory.isWeapon(weapon.getType()) && weapon.hasItemMeta()) {
-                double bonusDamage = weapon.getItemMeta().getPersistentDataContainer().getOrDefault(CustomItemFactory.BONUS_DAMAGE_KEY, PersistentDataType.DOUBLE, 0.0);
+            // Check both main hand and off-hand for bonus damage.
+            ItemStack mainHand = attacker.getInventory().getItemInMainHand();
+            ItemStack offHand = attacker.getInventory().getItemInOffHand();
+
+            if (CustomItemFactory.isWeapon(mainHand.getType()) && mainHand.hasItemMeta()) {
+                double bonusDamage = mainHand.getItemMeta().getPersistentDataContainer().getOrDefault(CustomItemFactory.BONUS_DAMAGE_KEY, PersistentDataType.DOUBLE, 0.0);
+                event.setDamage(event.getDamage() + bonusDamage);
+            } else if (CustomItemFactory.isWeapon(offHand.getType()) && offHand.hasItemMeta()) {
+                // If the main hand isn't a weapon, check the off-hand (e.g., dual wielding).
+                double bonusDamage = offHand.getItemMeta().getPersistentDataContainer().getOrDefault(CustomItemFactory.BONUS_DAMAGE_KEY, PersistentDataType.DOUBLE, 0.0);
                 event.setDamage(event.getDamage() + bonusDamage);
             }
         }
     }
 
+    /**
+     * Handles the use of special items like Demon Souls and Dragon's Hearts.
+     * @param event The player interaction event.
+     */
     @EventHandler
     public void onSpecialItemRightClick(PlayerInteractEvent event) {
         Player player = event.getPlayer();
@@ -78,21 +96,17 @@ public class SpecialItemListener implements Listener {
             return;
         }
 
-        // 이벤트가 중복으로 실행되는 것을 방지하기 위해, 주 손(오른손)의 이벤트만 처리합니다.
         if (event.getHand() != EquipmentSlot.HAND) return;
 
         ItemStack mainHandItem = player.getInventory().getItemInMainHand();
         ItemStack offHandItem = player.getInventory().getItemInOffHand();
 
-        // 오른손에 든 아이템이 없으면 무시
         if (mainHandItem.getType() == Material.AIR) {
             return;
         }
 
-        // 오른손에 '악마의 영혼'이나 '용의 심장'을 들고 우클릭하면, 기본 동작(설치, 소환)을 무조건 막습니다.
         if (CustomItemFactory.isDemonSoul(mainHandItem)) {
             event.setCancelled(true);
-            // 왼손에 강화할 아이템이 있을 때만 강화 로직을 실행합니다.
             if (offHandItem.getType() != Material.AIR) {
                 ItemStack newArmor = handleDemonSoul(player, offHandItem);
                 if (newArmor != null) {
@@ -102,7 +116,6 @@ public class SpecialItemListener implements Listener {
             }
         } else if (CustomItemFactory.isDragonsHeart(mainHandItem)) {
             event.setCancelled(true);
-            // 왼손에 강화할 아이템이 있을 때만 강화 로직을 실행합니다.
             if (offHandItem.getType() != Material.AIR) {
                 ItemStack newWeapon = handleDragonHeart(player, offHandItem);
                 if (newWeapon != null) {
@@ -113,8 +126,19 @@ public class SpecialItemListener implements Listener {
         }
     }
 
+    /**
+     * Handles the logic for applying a Demon Soul to a piece of armor.
+     * @param player The player using the soul.
+     * @param armor The armor item being upgraded.
+     * @return The modified armor stack, or null if the upgrade failed.
+     */
     private ItemStack handleDemonSoul(Player player, ItemStack armor) {
         if (!CustomItemFactory.isArmor(armor.getType())) {
+            return null;
+        }
+
+        if (plugin.getUpgradeManager().getUpgradeLevel(armor) < 10) {
+            player.sendMessage("§c이 아이템은 10강 이상의 갑옷에만 사용할 수 있습니다.");
             return null;
         }
 
@@ -122,46 +146,118 @@ public class SpecialItemListener implements Listener {
         if (meta == null) {
             return null;
         }
-        
-        // 부여할 수 있는 스탯 목록
-        List<Map.Entry<NamespacedKey, String>> possibleStats = List.of(
-                Map.entry(CustomItemFactory.BONUS_CDR_KEY, "쿨타임 감소"),
-                Map.entry(CustomItemFactory.BONUS_GENERIC_REDUCTION_KEY, "일반 피해 감소"),
-                Map.entry(CustomItemFactory.BONUS_SKILL_REDUCTION_KEY, "스킬 피해 감소"),
-                Map.entry(CustomItemFactory.BONUS_SPEED_KEY, "이동 속도")
-        );
 
-        // 목록에서 무작위로 스탯 하나를 선택
-        Map.Entry<NamespacedKey, String> chosenStat = possibleStats.get(random.nextInt(possibleStats.size()));
-        NamespacedKey keyToUpgrade = chosenStat.getKey();
-        String statName = chosenStat.getValue();
-
-        // 최대 사용 횟수 확인
         int currentUses = meta.getPersistentDataContainer().getOrDefault(CustomItemFactory.DEMON_SOUL_USES_KEY, PersistentDataType.INTEGER, 0);
         if (currentUses >= MAX_SOUL_USES) {
             player.sendMessage("§c이 갑옷에는 악마의 영혼을 더 이상 사용할 수 없습니다.");
             return null;
         }
 
-        double currentBonus = meta.getPersistentDataContainer().getOrDefault(keyToUpgrade, PersistentDataType.DOUBLE, 0.0);
-        double newBonus = currentBonus + 0.02; // 2% 증가
+        Optional<StatInfo> uniqueStatOpt = getUniqueStatForArmor(armor.getType());
 
-        // 아이템을 복제하여 수정
+        // Check if BOTH stats can be upgraded BEFORE making any changes.
+        boolean isHealthUpgradable = meta.getPersistentDataContainer().getOrDefault(CustomItemFactory.BONUS_HEALTH_KEY, PersistentDataType.DOUBLE, 0.0) < MAX_SOUL_USES - 0.001;
+
+        if (uniqueStatOpt.isPresent()) {
+            StatInfo uniqueStat = uniqueStatOpt.get();
+            boolean isUniqueStatUpgradable = meta.getPersistentDataContainer().getOrDefault(uniqueStat.key(), PersistentDataType.DOUBLE, 0.0) < getMaxBonusForStat(uniqueStat.key()) - 0.001;
+            if (!isHealthUpgradable || !isUniqueStatUpgradable) {
+                player.sendMessage("§c체력과 고유 스탯을 동시에 강화할 수 없어 악마의 영혼을 사용할 수 없습니다.");
+                return null;
+            }
+        } else { // No unique stat, just check health
+            if (!isHealthUpgradable) {
+                player.sendMessage("§c체력이 최대치에 도달하여 더 이상 강화할 수 없습니다.");
+                return null;
+            }
+        }
+
+        // If we reach here, it means we can upgrade everything that needs to be upgraded.
         ItemStack newArmor = armor.clone();
         ItemMeta newMeta = newArmor.getItemMeta();
-        newMeta.getPersistentDataContainer().set(keyToUpgrade, PersistentDataType.DOUBLE, newBonus);
+        List<String> enhancedStats = new ArrayList<>();
+
+        // Enhance Health
+        enhanceStat(newMeta, CustomItemFactory.BONUS_HEALTH_KEY, 1.0, MAX_SOUL_USES);
+        enhancedStats.add("§e최대 체력 +1");
+
+        // Enhance Unique Stat
+        uniqueStatOpt.ifPresent(uniqueStat -> {
+            enhanceStat(newMeta, uniqueStat.key(), 0.01, getMaxBonusForStat(uniqueStat.key()));
+            enhancedStats.add("§e" + uniqueStat.name() + " +1%");
+        });
+
+        // Update usage count and lore
         newMeta.getPersistentDataContainer().set(CustomItemFactory.DEMON_SOUL_USES_KEY, PersistentDataType.INTEGER, currentUses + 1);
-        updateLore(newMeta, "§d" + statName, newBonus * 100, "%");
+        updateSoulUsesLore(newMeta, currentUses + 1);
         newArmor.setItemMeta(newMeta);
 
-        // 속성(Attribute)을 아이템에 실제로 적용하기 위해 UpgradeManager를 통해 업데이트합니다.
         plugin.getUpgradeManager().setUpgradeLevel(newArmor, plugin.getUpgradeManager().getUpgradeLevel(newArmor));
-
         player.playSound(player.getLocation(), Sound.ENTITY_WITHER_AMBIENT, 1.0f, 0.8f);
-        player.sendMessage("§d갑옷에 악마의 힘이 깃들었습니다! (§e" + statName + " +2%§d)");
+
+        player.sendMessage("§d갑옷에 악마의 힘이 깃들었습니다! (" + String.join(", ", enhancedStats) + "§d)");
         return newArmor;
     }
 
+    /**
+     * Applies a stat enhancement if the current bonus is less than the max.
+     * @param meta The ItemMeta to modify.
+     * @param key The key for the stat.
+     * @param amount The amount to increase the stat by.
+     * @param max The maximum value for the stat.
+     * @return true if the stat was enhanced, false otherwise.
+     */
+    private boolean enhanceStat(ItemMeta meta, NamespacedKey key, double amount, double max) {
+        double currentBonus = meta.getPersistentDataContainer().getOrDefault(key, PersistentDataType.DOUBLE, 0.0);
+        // Use a small epsilon for floating point comparison
+        if (currentBonus < max - 0.001) {
+            double newBonus = currentBonus + amount;
+            meta.getPersistentDataContainer().set(key, PersistentDataType.DOUBLE, newBonus);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Gets the unique stat associated with a given armor type.
+     * @param armorType The material of the armor.
+     * @return An Optional containing the StatInfo if found.
+     */
+    private Optional<StatInfo> getUniqueStatForArmor(Material armorType) {
+        String typeName = armorType.name();
+        if (typeName.endsWith("_HELMET")) {
+            return Optional.of(new StatInfo(CustomItemFactory.BONUS_CDR_KEY, "쿨타임 감소", armorType));
+        } else if (typeName.endsWith("_CHESTPLATE")) {
+            return Optional.of(new StatInfo(CustomItemFactory.BONUS_GENERIC_REDUCTION_KEY, "일반 피해 감소", armorType));
+        } else if (typeName.endsWith("_LEGGINGS")) {
+            return Optional.of(new StatInfo(CustomItemFactory.BONUS_SKILL_REDUCTION_KEY, "스킬 피해 감소", armorType));
+        } else if (typeName.endsWith("_BOOTS")) {
+            return Optional.of(new StatInfo(CustomItemFactory.BONUS_SPEED_KEY, "이동 속도", armorType));
+        }
+        return Optional.empty();
+    }
+
+
+    /**
+     * Returns the maximum possible bonus value for a given stat key.
+     * @param key The NamespacedKey of the stat.
+     * @return The maximum bonus value.
+     */
+    private double getMaxBonusForStat(NamespacedKey key) {
+        if (key.equals(CustomItemFactory.BONUS_CDR_KEY)) return 0.1; // 10%
+        if (key.equals(CustomItemFactory.BONUS_GENERIC_REDUCTION_KEY)) return 0.1; // 10%
+        if (key.equals(CustomItemFactory.BONUS_SKILL_REDUCTION_KEY)) return 0.1; // 10%
+        if (key.equals(CustomItemFactory.BONUS_SPEED_KEY)) return 0.1; // 10%
+        return 0.0;
+    }
+
+
+    /**
+     * Handles the logic for applying a Dragon's Heart to a weapon.
+     * @param player The player using the heart.
+     * @param weapon The weapon being upgraded.
+     * @return The modified weapon stack, or null if the upgrade failed.
+     */
     private ItemStack handleDragonHeart(Player player, ItemStack weapon) {
         if (CustomItemFactory.isArmor(weapon.getType())) {
             return null;
@@ -177,9 +273,8 @@ public class SpecialItemListener implements Listener {
             return null;
         }
 
-        // 최대 사용 횟수 확인
-        double currentDamageCheck = meta.getPersistentDataContainer().getOrDefault(CustomItemFactory.BONUS_DAMAGE_KEY, PersistentDataType.DOUBLE, 0.0);
-        if (currentDamageCheck >= MAX_HEART_USES) {
+        int currentUses = meta.getPersistentDataContainer().getOrDefault(CustomItemFactory.DRAGONS_HEART_USES_KEY, PersistentDataType.INTEGER, 0);
+        if (currentUses >= MAX_HEART_USES) {
             player.sendMessage("§c이 무기에는 용의 심장을 더 이상 사용할 수 없습니다. (최대 " + MAX_HEART_USES + "회)");
             return null;
         }
@@ -187,48 +282,83 @@ public class SpecialItemListener implements Listener {
         double currentBonus = meta.getPersistentDataContainer().getOrDefault(CustomItemFactory.BONUS_DAMAGE_KEY, PersistentDataType.DOUBLE, 0.0);
         double newBonus = currentBonus + 1.0;
 
-        // 아이템을 복제하여 수정
         ItemStack newWeapon = weapon.clone();
         ItemMeta newMeta = newWeapon.getItemMeta();
+
         newMeta.getPersistentDataContainer().set(CustomItemFactory.BONUS_DAMAGE_KEY, PersistentDataType.DOUBLE, newBonus);
-        updateLore(newMeta, "§d추가 공격력", newBonus, "");
+        newMeta.getPersistentDataContainer().set(CustomItemFactory.DRAGONS_HEART_USES_KEY, PersistentDataType.INTEGER, currentUses + 1);
+
+        updateHeartUsesLore(newMeta, currentUses + 1);
         newWeapon.setItemMeta(newMeta);
+
+        plugin.getUpgradeManager().setUpgradeLevel(newWeapon, plugin.getUpgradeManager().getUpgradeLevel(newWeapon));
 
         player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 1.0f, 1.2f);
         player.sendMessage("§d무기에 용의 힘이 깃들었습니다! (§e공격력 +1§d)");
         return newWeapon;
     }
 
-    private void updateLore(ItemMeta meta, String lorePrefix, double value, String suffix) {
+    private void updateHeartUsesLore(ItemMeta meta, int uses) {
         List<String> lore = meta.getLore();
         if (lore == null) lore = new ArrayList<>();
 
-        String newLoreLine = String.format("%s: +%.0f%s", lorePrefix, value, suffix);
+        String usesLoreLine = "§d용의 심장: " + uses + "/" + MAX_HEART_USES;
 
         int index = -1;
         for (int i = 0; i < lore.size(); i++) {
-            if (lore.get(i).startsWith(lorePrefix)) {
+            if (lore.get(i).startsWith("§d용의 심장:")) {
                 index = i;
                 break;
             }
         }
 
         if (index != -1) {
-            lore.set(index, newLoreLine);
+            lore.set(index, usesLoreLine);
         } else {
-            // 특수 능력 설명(§b로 시작) 바로 위에 추가
-            int specialAbilityIndex = -1;
+            int insertIndex = lore.size();
             for (int i = 0; i < lore.size(); i++) {
-                if (lore.get(i).startsWith("§b")) {
-                    specialAbilityIndex = i;
+                if (lore.get(i).startsWith("§7주 손에 있을 때:")) {
+                    insertIndex = i;
                     break;
                 }
             }
-            if (specialAbilityIndex != -1) {
-                lore.add(specialAbilityIndex, newLoreLine);
-            } else {
-                lore.add(newLoreLine); // 특수 능력이 없으면 그냥 맨 아래에 추가
+            lore.add(insertIndex, usesLoreLine);
+        }
+        meta.setLore(lore);
+    }
+
+
+    /**
+     * Adds or updates the "Demon Soul: X/10" line in an item's lore.
+     * @param meta The item's meta to modify.
+     * @param uses The current number of uses.
+     */
+    private void updateSoulUsesLore(ItemMeta meta, int uses) {
+        List<String> lore = meta.getLore();
+        if (lore == null) lore = new ArrayList<>();
+
+        String usesLoreLine = "§5악마의 영혼: " + uses + "/" + MAX_SOUL_USES;
+
+        int index = -1;
+        for (int i = 0; i < lore.size(); i++) {
+            if (lore.get(i).startsWith("§5악마의 영혼:")) {
+                index = i;
+                break;
             }
+        }
+
+        if (index != -1) {
+            lore.set(index, usesLoreLine);
+        } else {
+            // Add it after the base stats but before special abilities
+            int insertIndex = lore.size();
+            for (int i = 0; i < lore.size(); i++) {
+                if (lore.get(i).startsWith("§b") || lore.get(i).startsWith("§e[패시브]")) {
+                    insertIndex = i;
+                    break;
+                }
+            }
+            lore.add(insertIndex, usesLoreLine);
         }
         meta.setLore(lore);
     }

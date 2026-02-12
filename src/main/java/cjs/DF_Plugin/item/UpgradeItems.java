@@ -1,7 +1,6 @@
-package cjs.DF_Plugin.upgrade.item;
+package cjs.DF_Plugin.item;
 
 import cjs.DF_Plugin.DF_Main;
-import cjs.DF_Plugin.item.ItemBuilder;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemStack;

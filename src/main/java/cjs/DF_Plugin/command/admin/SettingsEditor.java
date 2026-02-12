@@ -29,12 +29,17 @@ public class SettingsEditor {
         String[] colors = {"§a", "§b"}; // Green, Aqua
         int colorIndex = 0;
 
-        sendCategoryButton(player, "사망 타이머", "death", "§e사망 시 부활 대기 관련 설정을 엽니다.", colors[colorIndex++ % 2]);
-        sendCategoryButton(player, "파일런 설정", "pylon", "§e파일런 관련 세부 기능 설정을 엽니다.", colors[colorIndex++ % 2]);
-        sendCategoryButton(player, "월드 보더", "worldborder", "§e월드 보더 크기 및 활성화 설정을 엽니다.", colors[colorIndex++ % 2]);
-        sendCategoryButton(player, "유틸리티", "utility", "§e게임 편의성 관련 설정을 엽니다.", colors[colorIndex++ % 2]);
-        sendCategoryButton(player, "OP 인챈트", "openchant", "§e밸런스에 영향을 주는 인챈트 활성화 여부를 설정합니다.", colors[colorIndex++ % 2]);
-        sendCategoryButton(player, "보스몹 강화", "bossmobstrength", "§e보스 몬스터의 능력치 배율을 설정합니다.", colors[colorIndex++ % 2]);
+        sendCategoryButton(player, "사망 타이머", "death", "§e사망 시 부활 대기 관련 설정을 엽니다.", colors[colorIndex % 2]);
+        colorIndex++;
+        sendCategoryButton(player, "파일런 설정", "pylon", "§e파일런 관련 세부 기능 설정을 엽니다.", colors[colorIndex % 2]);
+        colorIndex++;
+        sendCategoryButton(player, "월드 보더", "worldborder", "§e월드 보더 크기 및 활성화 설정을 엽니다.", colors[colorIndex % 2]);
+        colorIndex++;
+        sendCategoryButton(player, "유틸리티", "utility", "§e게임 편의성 관련 설정을 엽니다.", colors[colorIndex % 2]);
+        colorIndex++;
+        sendCategoryButton(player, "OP 인챈트", "openchant", "§e밸런스에 영향을 주는 인챈트 활성화 여부를 설정합니다.", colors[colorIndex % 2]);
+        colorIndex++;
+        sendCategoryButton(player, "보스몹 강화", "bossmobstrength", "§e보스 몬스터의 능력치 배율을 설정합니다.", colors[colorIndex % 2]);
 
         player.sendMessage(""); // 설정 항목과 구분
 

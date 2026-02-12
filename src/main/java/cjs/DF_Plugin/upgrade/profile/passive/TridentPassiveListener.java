@@ -75,7 +75,7 @@ public class TridentPassiveListener implements Listener {
         Player player = event.getPlayer();
         ItemStack item = event.getItem();
 
-        if (item == null || item.getType() != org.bukkit.Material.TRIDENT) {
+        if (item.getType() != org.bukkit.Material.TRIDENT) {
             return;
         }
 
@@ -134,7 +134,7 @@ public class TridentPassiveListener implements Listener {
 
         if (!(event.getEntity() instanceof LivingEntity victim)) return;
 
-        int level = trident.getMetadata(TRIDENT_PASSIVE_LEVEL_KEY).get(0).asInt();
+        int level = trident.getMetadata(TRIDENT_PASSIVE_LEVEL_KEY).getFirst().asInt();
         if (level <= 0) return;
 
         GameConfigManager configManager = plugin.getGameConfigManager();

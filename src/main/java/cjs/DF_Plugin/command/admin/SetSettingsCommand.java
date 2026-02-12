@@ -2,8 +2,8 @@ package cjs.DF_Plugin.command.admin;
 
 import cjs.DF_Plugin.DF_Main;
 import cjs.DF_Plugin.events.game.settings.GameConfigManager;
+import cjs.DF_Plugin.item.RecipeManager;
 import cjs.DF_Plugin.world.WorldManager;
-import cjs.DF_Plugin.world.item.RecipeManager;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
@@ -52,14 +52,11 @@ public class SetSettingsCommand {
 
         try {
             Object newValue;
-            if (currentValue instanceof Integer) {
-                newValue = Integer.parseInt(valueStr);
-            } else if (currentValue instanceof Double) {
-                newValue = Double.parseDouble(valueStr);
-            } else if (currentValue instanceof Boolean) {
-                newValue = Boolean.parseBoolean(valueStr);
-            } else {
-                newValue = valueStr;
+            switch (currentValue) {
+                case Integer i -> newValue = Integer.parseInt(valueStr);
+                case Double d -> newValue = Double.parseDouble(valueStr);
+                case Boolean b -> newValue = Boolean.parseBoolean(valueStr);
+                default -> newValue = valueStr;
             }
 
             configManager.getConfig().set(key, newValue);

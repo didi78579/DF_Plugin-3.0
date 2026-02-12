@@ -1,3 +1,4 @@
+// C:/Users/CJS/IdeaProjects/DF_Plugin-2.0/src/main/java/cjs/DF_Plugin/upgrade/profile/type/ShovelProfile.java
 package cjs.DF_Plugin.upgrade.profile.type;
 
 import cjs.DF_Plugin.upgrade.UpgradeManager;
@@ -8,11 +9,7 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 public class ShovelProfile implements IUpgradeableProfile {
     private static final ISpecialAbility STUN_ABILITY = new StunAbility();
@@ -27,7 +24,12 @@ public class ShovelProfile implements IUpgradeableProfile {
     }
 
     @Override
-    public List<String> getBaseStatsLore(ItemStack item, int level, double bonusDamage) {
+    public List<String> getBaseStatsLore(org.bukkit.inventory.ItemStack item, int level, double baseValue) {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public List<String> getPassiveBonusLore(ItemStack item, int level) {
         return Collections.emptyList();
     }
 

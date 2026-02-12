@@ -1,6 +1,5 @@
 package cjs.DF_Plugin.upgrade.gui;
 
-import cjs.DF_Plugin.DF_Main;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -13,15 +12,8 @@ import java.util.Arrays;
 
 public class UpgradeGUI {
 
-    private final DF_Main plugin;
     public static final String GUI_TITLE = "§6장비 대장간";
     public static final int UPGRADE_ITEM_SLOT = 4; // 중앙
-
-    public UpgradeGUI(DF_Main plugin) {
-        this.plugin = plugin;
-
-
-    }
 
     public void open(Player player) {
         Inventory gui = Bukkit.createInventory(null, 9, GUI_TITLE);

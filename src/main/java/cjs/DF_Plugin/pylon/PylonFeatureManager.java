@@ -1,9 +1,9 @@
 package cjs.DF_Plugin.pylon;
 
 import cjs.DF_Plugin.DF_Main;
+import cjs.DF_Plugin.item.CustomItemFactory;
 import cjs.DF_Plugin.pylon.clan.Clan;
 import cjs.DF_Plugin.util.PluginUtils;
-import cjs.DF_Plugin.util.item.PylonItemFactory;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -27,7 +27,7 @@ public class PylonFeatureManager {
      */
     public void handleMultiCoreDeactivation() {
         boolean anyRetrieved = false;
-        ItemStack auxCoreItem = PylonItemFactory.createAuxiliaryCore();
+        ItemStack auxCoreItem = CustomItemFactory.createAuxiliaryPylonCore();
 
         for (Clan clan : plugin.getClanManager().getAllClans()) {
             List<String> pylonsToRemove = new ArrayList<>();

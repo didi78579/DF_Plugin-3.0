@@ -1,9 +1,9 @@
 package cjs.DF_Plugin.events.game;
 
 import cjs.DF_Plugin.DF_Main;
+import cjs.DF_Plugin.item.CustomItemFactory;
 import cjs.DF_Plugin.pylon.clan.Clan;
 import cjs.DF_Plugin.util.InventoryUtils;
-import cjs.DF_Plugin.util.item.PylonItemFactory;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -52,7 +52,7 @@ public class GameStartManager {
 
         // 4. 모든 가문의 시작 지점을 설정합니다. (텔레포트는 재접속 시)
         for (Clan clan : plugin.getClanManager().getAllClans()) {
-            Location randomLoc = getRandomSafeLocation(Bukkit.getWorlds().get(0));
+            Location randomLoc = getRandomSafeLocation(Bukkit.getWorlds().getFirst());
             clan.setStartLocation(randomLoc);
             plugin.getClanManager().saveClanData(clan);
         }
@@ -71,7 +71,7 @@ public class GameStartManager {
                     player.teleport(startLoc);
                     player.setGameMode(GameMode.SURVIVAL); // 리더는 서바이벌 모드
                     // 게임 시작 시 가문 대표에게 파일런 코어를 지급합니다.
-                    InventoryUtils.giveOrDropItems(player, PylonItemFactory.createMainCore());
+                    InventoryUtils.giveOrDropItems(player, CustomItemFactory.createMainPylonCore());
                     // 이미 텔레포트되었으므로, 재접속 시 다시 이동하지 않도록 플래그를 업데이트합니다.
                     plugin.getPlayerDataManager().setInitialTeleportDone(player.getUniqueId(), true);
                 } else {

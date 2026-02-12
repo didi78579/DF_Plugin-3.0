@@ -31,7 +31,7 @@ public class NetherPvPListener implements Listener {
         if (killer != null && !killer.equals(victim)) {
             // 3. 사망 위치에 '악마의 영혼' 아이템을 1개 드롭합니다.
             world.dropItemNaturally(victim.getLocation(), CustomItemFactory.createDemonSoul());
-            killer.sendMessage("§c지옥에서 적을 처치하여 §4악마의 영혼§c을 1개 획득했습니다.");
+
         }
     }
 }

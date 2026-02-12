@@ -1,12 +1,12 @@
 package cjs.DF_Plugin.util;
 
 import cjs.DF_Plugin.DF_Main;
+import cjs.DF_Plugin.upgrade.UpgradeManager;
 import cjs.DF_Plugin.upgrade.specialability.ISpecialAbility;
 import cjs.DF_Plugin.upgrade.specialability.SpecialAbilityManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.JoinConfiguration;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -19,9 +19,11 @@ import java.util.*;
 public class ActionBarManager {
 
     private final SpecialAbilityManager specialAbilityManager;
+    private final UpgradeManager upgradeManager;
 
     public ActionBarManager(DF_Main plugin, SpecialAbilityManager specialAbilityManager) {
         this.specialAbilityManager = specialAbilityManager;
+        this.upgradeManager = plugin.getUpgradeManager();
         startUpdater(plugin);
     }
 
@@ -41,7 +43,7 @@ public class ActionBarManager {
         Optional<SpecialAbilityManager.LungeGaugeInfo> lungeInfoOpt = specialAbilityManager.getLungeGaugeInfo(player);
 
         // 1. 창을 들고 있을 경우, 기력 게이지 바만 표시합니다.
-        if (isHoldingLungeWeapon(player)) {
+        if (isHoldingSpear(player)) {
             if (lungeInfoOpt.isPresent() && lungeInfoOpt.get().maxGauge() > 0) {
                 player.sendActionBar(formatLungeGaugeAsBar(lungeInfoOpt.get()));
                 return; // 다른 정보는 표시하지 않고 종료
@@ -55,6 +57,11 @@ public class ActionBarManager {
         Map<String, SpecialAbilityManager.CooldownInfo> cooldowns = specialAbilityManager.getPlayerCooldowns(playerUUID);
         if (cooldowns != null) {
             cooldowns.forEach((key, info) -> {
+                // '윈드차지' 능력의 쿨다운은 액션바에 표시하지 않음
+                if ("wind_charge".equals(key)) {
+                    return;
+                }
+
                 long remainingMillis = info.endTime() - System.currentTimeMillis();
                 if (remainingMillis > 0) {
                     ISpecialAbility ability = specialAbilityManager.getRegisteredAbility(key);
@@ -163,29 +170,14 @@ public class ActionBarManager {
         return Component.text(String.format("기력: %d%%", percentageInt)).color(color);
     }
 
-    private boolean isHoldingLungeWeapon(Player player) {
+    private boolean isHoldingSpear(Player player) {
         ItemStack mainHand = player.getInventory().getItemInMainHand();
-        if (isLungeWeapon(mainHand)) return true;
+        if (upgradeManager.isSpear(mainHand)) return true;
 
         ItemStack offHand = player.getInventory().getItemInOffHand();
-        if (isLungeWeapon(offHand)) return true;
+        if (upgradeManager.isSpear(offHand)) return true;
 
         return false;
-    }
-
-    private boolean isLungeWeapon(ItemStack item) {
-        if (item == null || item.getType() == Material.AIR || !item.hasItemMeta()) {
-            return false;
-        }
-        ItemMeta meta = item.getItemMeta();
-        if (meta == null || !meta.hasLore()) {
-            return false;
-        }
-        List<Component> lore = meta.lore();
-        if (lore == null) return false;
-
-        return lore.stream()
-                .anyMatch(line -> PlainTextComponentSerializer.plainText().serialize(line).contains("최대 기력"));
     }
 
     private boolean isHoldingMace(Player player) {

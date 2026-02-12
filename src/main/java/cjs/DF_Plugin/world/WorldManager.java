@@ -2,6 +2,7 @@ package cjs.DF_Plugin.world;
 
 import cjs.DF_Plugin.DF_Main;
 import cjs.DF_Plugin.pylon.clan.Clan;
+import cjs.DF_Plugin.util.GameRules;
 import cjs.DF_Plugin.util.PluginUtils;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
@@ -56,21 +57,19 @@ public class WorldManager {
             difficulty = Difficulty.HARD;
         }
 
-        world.setGameRule(GameRule.KEEP_INVENTORY, keepInventory);
-        world.setGameRule(GameRule.REDUCED_DEBUG_INFO, locationInfoDisabled);
-        world.setGameRule(GameRule.DO_INSOMNIA, !phantomDisabled); // 팬텀 생성 여부 (true: 생성, false: 미생성)
+        if (GameRules.KEEP_INVENTORY != null) {
+            world.setGameRule(GameRules.KEEP_INVENTORY, keepInventory);
+        }
+        if (GameRules.REDUCED_DEBUG_INFO != null) {
+            world.setGameRule(GameRules.REDUCED_DEBUG_INFO, locationInfoDisabled);
+        }
+        if (GameRules.DO_INSOMNIA != null) {
+            world.setGameRule(GameRules.DO_INSOMNIA, !phantomDisabled); // 팬텀 생성 여부 (true: 생성, false: 미생성)
+        }
         world.setDifficulty(difficulty);
 
-        // 'locatorBar' 게임 규칙은 최신 버전에만 존재하므로, 버전 호환성을 고려하여 적용합니다.
-        try {
-            // Paper API인 GameRule.getByName()을 사용하여 규칙을 찾습니다.
-            @SuppressWarnings("unchecked")
-            GameRule<Boolean> locatorBarRule = (GameRule<Boolean>) GameRule.getByName("locatorBar");
-            if (locatorBarRule != null) {
-                world.setGameRule(locatorBarRule, !locatorBarDisabled);
-            }
-        } catch (NoSuchMethodError e) {
-            // GameRule.getByName()이 없는 구버전 Spigot 환경에서는 이 규칙 적용을 건너뜁니다.
+        if (GameRules.LOCATOR_BAR != null) {
+            world.setGameRule(GameRules.LOCATOR_BAR, !locatorBarDisabled);
         }
     }
 
@@ -113,7 +112,7 @@ public class WorldManager {
                 hexString.append(hex);
             }
             // 해시의 일부를 사용하여 폴더 이름이 너무 길어지는 것을 방지합니다.
-            return "clan_nether_" + hexString.toString().substring(0, 16);
+            return "clan_nether_" + hexString.substring(0, 16);
         } catch (NoSuchAlgorithmException e) {
             plugin.getLogger().log(Level.SEVERE, "[월드 관리] SHA-1 알고리즘을 찾을 수 없어, 안전하지 않은 월드 이름으로 대체합니다.", e);
             // SHA-1을 사용할 수 없는 극단적인 경우에 대한 대체 로직
@@ -222,7 +221,7 @@ public class WorldManager {
             }
         }
         // 가문 또는 파일런이 없는 경우 오버월드 스폰으로 이동
-        World mainWorld = Bukkit.getWorlds().get(0);
+        World mainWorld = Bukkit.getWorlds().getFirst();
         if (mainWorld != null) {
             player.teleport(mainWorld.getSpawnLocation());
             player.sendMessage("§a[귀환] §f안전한 장소(스폰)로 이동했습니다.");

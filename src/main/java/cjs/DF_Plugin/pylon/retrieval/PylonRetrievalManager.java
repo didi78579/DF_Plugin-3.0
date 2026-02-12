@@ -1,11 +1,11 @@
 package cjs.DF_Plugin.pylon.retrieval;
 
 import cjs.DF_Plugin.DF_Main;
+import cjs.DF_Plugin.item.CustomItemFactory;
 import cjs.DF_Plugin.pylon.PylonType;
 import cjs.DF_Plugin.pylon.clan.Clan;
 import cjs.DF_Plugin.util.InventoryUtils;
 import cjs.DF_Plugin.util.PluginUtils;
-import cjs.DF_Plugin.util.item.PylonItemFactory;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -69,9 +69,9 @@ public class PylonRetrievalManager {
             }
 
             if (pylonType == PylonType.MAIN_CORE) {
-                pylonItems.add(PylonItemFactory.createMainCore());
+                pylonItems.add(CustomItemFactory.createMainPylonCore());
             } else {
-                pylonItems.add(PylonItemFactory.createAuxiliaryCore());
+                pylonItems.add(CustomItemFactory.createAuxiliaryPylonCore());
             }
         }
 
@@ -128,7 +128,7 @@ public class PylonRetrievalManager {
             plugin.getPylonManager().getAreaManager().removeProtectedPylon(pylonBlock.getLocation());
             plugin.getPylonManager().getStructureManager().removeBaseAndBarrier(pylonBlock.getLocation());
 
-            InventoryUtils.giveOrDropItems(player, PylonItemFactory.createAuxiliaryCore());
+            InventoryUtils.giveOrDropItems(player, CustomItemFactory.createAuxiliaryPylonCore());
             player.sendMessage(PREFIX + "보조 파일런을 성공적으로 회수했습니다.");
 
             pylonBlock.setType(Material.AIR);

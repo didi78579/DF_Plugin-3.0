@@ -53,7 +53,7 @@ public class CrossbowPassiveListener implements Listener {
             return;
         }
 
-        int level = arrow.getMetadata(CROSSBOW_PASSIVE_LEVEL_KEY).get(0).asInt();
+        int level = arrow.getMetadata(CROSSBOW_PASSIVE_LEVEL_KEY).getFirst().asInt();
         final double damagePerLevel = plugin.getGameConfigManager().getConfig().getDouble("upgrade.generic-bonuses.crossbow.damage-per-level", 0.5);
         final double additionalDamage = level * damagePerLevel;
 

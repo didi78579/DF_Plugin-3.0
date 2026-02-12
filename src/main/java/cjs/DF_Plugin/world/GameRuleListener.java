@@ -2,6 +2,7 @@ package cjs.DF_Plugin.world;
 
 import cjs.DF_Plugin.DF_Main;
 import cjs.DF_Plugin.events.game.settings.GameConfigManager;
+import cjs.DF_Plugin.util.GameRules;
 import cjs.DF_Plugin.upgrade.specialability.SpecialAbilityManager;
 import org.bukkit.Material;
 import org.bukkit.entity.EntityType;
@@ -38,7 +39,10 @@ public class GameRuleListener implements Listener {
      */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerDeath(PlayerDeathEvent event) {
-        if (configManager.getConfig().getBoolean("world.rules.keep-inventory", true)) {
+        // [API 현대화] 월드의 keepInventory 게임 규칙을 직접 확인하는 대신,
+        // 이벤트의 setKeepInventory를 사용하여 제어합니다. 이는 다른 플러그인과의 호환성을 높입니다.
+        boolean keepInventory = event.getPlayer().getWorld().getGameRuleValue(GameRules.KEEP_INVENTORY);
+        if (keepInventory) {
             event.setKeepInventory(true);
             event.getDrops().clear();
             event.setDroppedExp(0);

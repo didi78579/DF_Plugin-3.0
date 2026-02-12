@@ -1,4 +1,3 @@
-// C:/Users/CJS/IdeaProjects/DF_Plugin-2.0/src/main/java/cjs/DF_Plugin/upgrade/profile/type/AxeProfile.java
 package cjs.DF_Plugin.upgrade.profile.type;
 
 import cjs.DF_Plugin.DF_Main;
@@ -13,6 +12,7 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,5 +35,10 @@ public class AxeProfile implements IUpgradeableProfile {
     @Override
     public Optional<ISpecialAbility> getSpecialAbility() {
         return Optional.of(CLEANSING_ABILITY);
+    }
+
+    @Override
+    public List<String> getBaseStatsLore(org.bukkit.inventory.ItemStack item, int level, double baseValue) {
+        return new ArrayList<>(); // 도끼는 기본 스탯 로어를 표시하지 않음
     }
 }

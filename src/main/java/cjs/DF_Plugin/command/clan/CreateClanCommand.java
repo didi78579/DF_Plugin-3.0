@@ -1,9 +1,9 @@
 package cjs.DF_Plugin.command.clan;
 
 import cjs.DF_Plugin.DF_Main;
+import cjs.DF_Plugin.item.CustomItemFactory;
 import cjs.DF_Plugin.pylon.clan.Clan;
 import cjs.DF_Plugin.pylon.clan.ClanManager;
-import cjs.DF_Plugin.util.item.PylonItemFactory;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
@@ -12,12 +12,10 @@ import java.util.List;
 
 public class CreateClanCommand {
 
-    private final DF_Main plugin;
     private final ClanManager clanManager;
     private final ClanUIManager uiManager;
 
     public CreateClanCommand(DF_Main plugin) {
-        this.plugin = plugin;
         this.clanManager = plugin.getClanManager();
         this.uiManager = plugin.getClanManager().getUiManager();
     }
@@ -96,8 +94,6 @@ public class CreateClanCommand {
 
                 player.sendMessage("§a[가문] §a가문 '" + newClan.getFormattedName() + "§a'이(가) 성공적으로 생성되었습니다!");
 
-                // 주 파일런 코어 지급
-                player.getInventory().addItem(PylonItemFactory.createMainCore());
                 // 플레이어 태그 즉시 업데이트
                 clanManager.getPlayerTagManager().updatePlayerTag(player);
 

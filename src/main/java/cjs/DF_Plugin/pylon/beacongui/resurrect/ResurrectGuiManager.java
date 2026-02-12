@@ -1,11 +1,11 @@
 package cjs.DF_Plugin.pylon.beacongui.resurrect;
 
 import cjs.DF_Plugin.DF_Main;
+import cjs.DF_Plugin.item.ItemBuilder;
+import cjs.DF_Plugin.item.ItemFactory;
 import cjs.DF_Plugin.pylon.beacongui.BeaconGUIManager;
 import cjs.DF_Plugin.pylon.clan.Clan;
 import cjs.DF_Plugin.util.PluginUtils;
-import cjs.DF_Plugin.util.item.ItemBuilder;
-import cjs.DF_Plugin.util.item.ItemFactory;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
@@ -19,7 +19,6 @@ import org.bukkit.persistence.PersistentDataType;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 public class ResurrectGuiManager {
     private final DF_Main plugin;
@@ -36,7 +35,7 @@ public class ResurrectGuiManager {
 
         List<UUID> deadClanMembers = plugin.getPlayerDeathManager().getDeadPlayers().keySet().stream()
                 .filter(clan.getMembers()::contains)
-                .collect(Collectors.toList());
+                .toList();
 
         // TODO: Add pagination for more than 54 members
         Inventory gui = Bukkit.createInventory(null, 54, RESURRECT_GUI_TITLE);

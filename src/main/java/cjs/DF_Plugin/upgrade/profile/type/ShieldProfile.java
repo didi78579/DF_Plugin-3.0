@@ -8,7 +8,7 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,6 +21,7 @@ public class ShieldProfile implements IUpgradeableProfile {
         double unbreakingPerLevel = DF_Main.getInstance().getGameConfigManager().getConfig().getDouble("upgrade.generic-bonuses.shield.unbreaking-per-level", 1.0);
         int enchantLevel = (int) (level * unbreakingPerLevel);
 
+        // 강화 레벨만큼 내구성 인챈트 적용
         if (enchantLevel > 0) {
             meta.addEnchant(Enchantment.UNBREAKING, enchantLevel, true);
         } else {
@@ -29,8 +30,8 @@ public class ShieldProfile implements IUpgradeableProfile {
     }
 
     @Override
-    public List<String> getBaseStatsLore(ItemStack item, int level, double bonusDamage) {
-        return Collections.emptyList();
+    public List<String> getBaseStatsLore(org.bukkit.inventory.ItemStack item, int level, double baseValue) {
+        return new ArrayList<>(); // 도끼는 기본 스탯 로어를 표시하지 않음
     }
 
     @Override

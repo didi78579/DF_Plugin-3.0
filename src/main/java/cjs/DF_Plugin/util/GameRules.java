@@ -1,41 +1,22 @@
 package cjs.DF_Plugin.util;
 
-import org.bukkit.GameRule;
-
 /**
- * Paper 1.21 API 변경에 따른 GameRule 호환성 헬퍼 클래스입니다.
- * <p>
- * Paper 1.21부터 {@link org.bukkit.GameRule}의 상수 필드들이 deprecated for removal 처리되었습니다.
- * 대신 {@link org.bukkit.GameRules} 클래스의 상수들을 사용해야 합니다.
- * 이 클래스는 리플렉션을 사용하여 새로운 API의 존재 여부를 확인하고,
- * 존재하면 새로운 상수를, 존재하지 않으면 기존 상수를 반환하여 하위 버전과의 호환성을 유지합니다.
+ * Paper 1.21+ API의 게임 규칙 상수를 참조하는 헬퍼 클래스입니다.
+ * 이 플러그인은 최신 버전을 대상으로 하므로, 하위 호환성 로직을 제거하여 코드를 간소화합니다.
+ * 일부 상수는 deprecated 되었지만, 일관된 참조를 위해 이 클래스에서 관리합니다.
  */
-@SuppressWarnings("unchecked")
+@SuppressWarnings({"deprecation", "removal"})
 public final class GameRules {
 
-    public static final GameRule<Boolean> KEEP_INVENTORY;
-    public static final GameRule<Boolean> REDUCED_DEBUG_INFO;
-    public static final GameRule<Boolean> DO_INSOMNIA;
-    public static final GameRule<Boolean> LOCATOR_BAR;
+    // 최신 API에서는 일부 상수가 org.bukkit.GameRules로 이동했고, 일부는 org.bukkit.GameRule에 남아있습니다.
+    // 각각 올바른 위치에서 참조합니다.
+    public static final org.bukkit.GameRule<java.lang.Boolean> KEEP_INVENTORY = org.bukkit.GameRules.KEEP_INVENTORY;
+    public static final org.bukkit.GameRule<java.lang.Boolean> REDUCED_DEBUG_INFO = org.bukkit.GameRules.REDUCED_DEBUG_INFO;
+    public static final org.bukkit.GameRule<java.lang.Boolean> LOCATOR_BAR = org.bukkit.GameRules.LOCATOR_BAR;
 
-    static {
-        KEEP_INVENTORY = getGameRule("KEEP_INVENTORY");
-        REDUCED_DEBUG_INFO = getGameRule("REDUCED_DEBUG_INFO");
-        DO_INSOMNIA = getGameRule("DO_INSOMNIA");
-        LOCATOR_BAR = getGameRule("LOCATOR_BAR");
-    }
-
-    private static <T> GameRule<T> getGameRule(String name) {
-        try {
-            // Paper 1.21+ API: org.bukkit.GameRules 클래스에서 필드를 찾습니다.
-            Class<?> gameRulesClass = Class.forName("org.bukkit.GameRules");
-            return (GameRule<T>) gameRulesClass.getField(name).get(null);
-        } catch (Exception e) {
-            // 구버전 API 또는 필드를 찾지 못한 경우: org.bukkit.GameRule 클래스에서 찾습니다.
-            // 이 방식은 deprecated 되었지만 하위 호환성을 위해 유지합니다.
-            return GameRule.getByName(name);
-        }
-    }
+    // 아래 상수들은 org.bukkit.GameRule에 남아있으며, deprecated 되었습니다.
+    public static final org.bukkit.GameRule<java.lang.Boolean> DO_INSOMNIA = org.bukkit.GameRule.DO_INSOMNIA;
+    public static final org.bukkit.GameRule<java.lang.Boolean> DO_MOB_SPAWNING = org.bukkit.GameRule.DO_MOB_SPAWNING;
 
     private GameRules() {}
 }

@@ -20,14 +20,11 @@ import java.util.Arrays;
 
 public class EnchantListener implements Listener {
 
-    private final DF_Main plugin;
     private final EnchantManager enchantManager;
     public static final String GUI_TITLE = "§5마법 부여";
     public static final int ITEM_SLOT = 4;
-    private static final String PREFIX = "§5[마법 부여] §f";
 
     public EnchantListener(DF_Main plugin) {
-        this.plugin = plugin;
         this.enchantManager = plugin.getEnchantManager();
     }
 
@@ -100,7 +97,7 @@ public class EnchantListener implements Listener {
         ItemStack itemInSlot = gui.getItem(ITEM_SLOT);
 
         // 커서에 아이템이 있는 경우: 아이템 놓기
-        if (cursorItem != null && cursorItem.getType() != Material.AIR) {
+        if (cursorItem.getType() != Material.AIR) {
             if (isPlaceholder(itemInSlot)) {
                 gui.setItem(ITEM_SLOT, cursorItem.clone());
                 player.setItemOnCursor(null);
@@ -112,10 +109,7 @@ public class EnchantListener implements Listener {
         // 슬롯에 아이템이 있는 경우: 인챈트 또는 아이템 빼기
         if (!isPlaceholder(itemInSlot)) {
             if (event.isLeftClick()) { // 좌클릭: 인챈트 시도
-                boolean success = enchantManager.attemptEnchant(player, itemInSlot);
-                if (success) {
-                    // 인챈트에 성공하면 itemInSlot이 이미 업데이트되었으므로, GUI 슬롯을 비우지 않고 그대로 둡니다.
-                }
+                enchantManager.attemptEnchant(player, itemInSlot);
             } else if (event.isRightClick()) { // 우클릭: 아이템 빼기
                 InventoryUtils.giveOrDropItems(player, itemInSlot);
                 gui.setItem(ITEM_SLOT, createPlaceholder());

@@ -33,7 +33,7 @@ public class ShieldBashAbility implements ISpecialAbility {
 
     @Override
     public double getCooldown() {
-        return DF_Main.getInstance().getGameConfigManager().getConfig().getDouble("upgrade.special-abilities.shield_bash.cooldown", 150.0);
+        return DF_Main.getInstance().getGameConfigManager().getConfig().getDouble("upgrade.special-abilities.shield_bash.cooldown", 45.0);
     }
 
     @Override

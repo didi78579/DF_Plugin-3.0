@@ -22,46 +22,75 @@ public class ChestplateProfile implements IUpgradeableProfile {
     private static final NamespacedKey ARMOR_MODIFIER_KEY = new NamespacedKey(DF_Main.getInstance(), "chestplate_armor");
     private static final NamespacedKey ARMOR_TOUGHNESS_MODIFIER_KEY = new NamespacedKey(DF_Main.getInstance(), "chestplate_armor_toughness");
     private static final NamespacedKey KNOCKBACK_RESISTANCE_MODIFIER_KEY = new NamespacedKey(DF_Main.getInstance(), "chestplate_knockback_resistance");
-    private static final NamespacedKey SPEED_MODIFIER_KEY = new NamespacedKey(DF_Main.getInstance(), "chestplate_upgrade_movement_speed");
     private static final NamespacedKey HEALTH_MODIFIER_KEY = new NamespacedKey(DF_Main.getInstance(), "chestplate_upgrade_health");
 
+    /**
+     * Applies attributes to the chestplate based on its upgrade level and bonus stats.
+     * @param item The ItemStack of the chestplate.
+     * @param meta The ItemMeta of the chestplate.
+     * @param level The upgrade level of the chestplate.
+     */
     @Override
     public void applyAttributes(ItemStack item, ItemMeta meta, int level) {
         meta.removeAttributeModifier(Attribute.ARMOR);
         meta.removeAttributeModifier(Attribute.ARMOR_TOUGHNESS);
         meta.removeAttributeModifier(Attribute.KNOCKBACK_RESISTANCE);
-        meta.removeAttributeModifier(Attribute.MOVEMENT_SPEED);
         meta.removeAttributeModifier(Attribute.MAX_HEALTH);
 
         applyBaseArmorAttributes(item.getType(), meta);
 
-        double healthBonus = 1.0 * level;
+        // [수정] 악마의 영혼으로 부여된 추가 체력과 강화 레벨에 따른 체력을 합산합니다.
+        double levelHealthBonus = (level >= 10) ? 10.0 : level; // 10강부터 기본 +10
+        double soulHealthBonus = 0.0;
+        if (meta.getPersistentDataContainer().has(CustomItemFactory.BONUS_HEALTH_KEY)) {
+            soulHealthBonus = meta.getPersistentDataContainer().getOrDefault(CustomItemFactory.BONUS_HEALTH_KEY, PersistentDataType.DOUBLE, 0.0);
+        }
+        double healthBonus = levelHealthBonus + soulHealthBonus;
         if (healthBonus > 0) {
             AttributeModifier healthModifier = new AttributeModifier(HEALTH_MODIFIER_KEY, healthBonus, AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.CHEST);
             meta.addAttributeModifier(Attribute.MAX_HEALTH, healthModifier);
         }
 
-        double soulSpeedBonus = meta.getPersistentDataContainer().getOrDefault(CustomItemFactory.BONUS_SPEED_KEY, PersistentDataType.DOUBLE, 0.0);
-        if (soulSpeedBonus > 0) {
-            AttributeModifier speedModifier = new AttributeModifier(SPEED_MODIFIER_KEY, soulSpeedBonus, AttributeModifier.Operation.MULTIPLY_SCALAR_1, EquipmentSlotGroup.CHEST);
-            meta.addAttributeModifier(Attribute.MOVEMENT_SPEED, speedModifier);
-        }
-
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
     }
 
+    /**
+     * Generates the lore for passive bonuses based on the upgrade level.
+     * @param item The ItemStack of the chestplate.
+     * @param level The upgrade level of the chestplate.
+     * @return A list of strings representing the passive bonus lore.
+     */
     @Override
     public List<String> getPassiveBonusLore(ItemStack item, int level) {
         if (level <= 0) {
             return Collections.emptyList();
         }
         List<String> lore = new ArrayList<>();
-        double healthBonus = 1.0 * level;
-        lore.add("§b추가 체력: +" + String.format("%.0f", healthBonus));
-        lore.add("§b일반 피해 감소: " + level + "%");
+        // [수정] 10강부터 기본 스탯 +10을 표시합니다.
+        if (level >= 10) {
+            lore.add("§b추가 체력: +10");
+            lore.add("§b일반 피해 감소: +10%");
+        }
+
+        // [수정] 악마의 영혼으로 추가된 보너스 스탯을 별도로 표시합니다.
+        if (item.hasItemMeta()) {
+            ItemMeta meta = item.getItemMeta();
+            double bonusHealth = meta.getPersistentDataContainer().getOrDefault(CustomItemFactory.BONUS_HEALTH_KEY, PersistentDataType.DOUBLE, 0.0);
+            double bonusGenericReduction = meta.getPersistentDataContainer().getOrDefault(CustomItemFactory.BONUS_GENERIC_REDUCTION_KEY, PersistentDataType.DOUBLE, 0.0);
+
+            if (bonusHealth > 0) lore.add("§d추가 체력: +" + String.format("%.0f", bonusHealth));
+            if (bonusGenericReduction > 0) lore.add("§d일반 피해 감소: +" + String.format("%.0f", bonusGenericReduction * 100) + "%");
+        }
         return lore;
     }
 
+    /**
+     * Generates the base stats lore for the chestplate.
+     * @param item The ItemStack of the chestplate.
+     * @param level The upgrade level of the chestplate.
+     * @param bonusDamage (Not used for chestplates) Bonus damage value.
+     * @return A list of strings representing the base stats lore.
+     */
     @Override
     public List<String> getBaseStatsLore(ItemStack item, int level, double bonusDamage) {
         List<String> baseLore = new ArrayList<>();
@@ -70,39 +99,23 @@ public class ChestplateProfile implements IUpgradeableProfile {
         double armor = getBaseArmorAttribute(item.getType(), "armor");
         double toughness = getBaseArmorAttribute(item.getType(), "toughness");
         double knockbackResistance = getBaseArmorAttribute(item.getType(), "knockbackResistance");
-        double healthBonus = 1.0 * level;
 
         if (armor > 0) baseLore.add("§2 " + String.format("%.0f", armor) + " 방어");
         if (toughness > 0) baseLore.add("§2 " + String.format("%.0f", toughness) + " 방어 강도");
         if (knockbackResistance > 0) baseLore.add("§2 " + String.format("%.1f", knockbackResistance) + " 밀치기 저항");
-        if (healthBonus > 0) baseLore.add("§2 +" + String.format("%.0f", healthBonus) + " 최대 체력");
-
-        if (item.hasItemMeta()) {
-            ItemMeta meta = item.getItemMeta();
-            double bonusCdr = meta.getPersistentDataContainer().getOrDefault(CustomItemFactory.BONUS_CDR_KEY, PersistentDataType.DOUBLE, 0.0);
-            double bonusGenericReduction = meta.getPersistentDataContainer().getOrDefault(CustomItemFactory.BONUS_GENERIC_REDUCTION_KEY, PersistentDataType.DOUBLE, 0.0);
-            double bonusSkillReduction = meta.getPersistentDataContainer().getOrDefault(CustomItemFactory.BONUS_SKILL_REDUCTION_KEY, PersistentDataType.DOUBLE, 0.0);
-            double bonusSpeed = meta.getPersistentDataContainer().getOrDefault(CustomItemFactory.BONUS_SPEED_KEY, PersistentDataType.DOUBLE, 0.0);
-
-            if (bonusCdr > 0) baseLore.add("§2 +" + String.format("%.0f", bonusCdr * 100) + "% 쿨타임 감소");
-            if (bonusGenericReduction > 0) baseLore.add("§2 +" + String.format("%.0f", bonusGenericReduction * 100) + "% 일반 피해 감소");
-            if (bonusSkillReduction > 0) baseLore.add("§2 +" + String.format("%.0f", bonusSkillReduction * 100) + "% 스킬 피해 감소");
-            if (bonusSpeed > 0) baseLore.add("§2 +" + String.format("%.0f", bonusSpeed * 100) + "% 이동 속도");
-        }
 
         return baseLore;
     }
 
+    /**
+     * Applies the base armor attributes to the chestplate based on its material.
+     * @param material The material of the chestplate.
+     * @param meta The ItemMeta to apply the attributes to.
+     */
     private void applyBaseArmorAttributes(Material material, ItemMeta meta) {
-        double armor = 0, toughness = 0, knockbackResistance = 0;
-
-        switch (material) {
-            case LEATHER_CHESTPLATE -> armor = 3;
-            case CHAINMAIL_CHESTPLATE, GOLDEN_CHESTPLATE -> armor = 5;
-            case IRON_CHESTPLATE -> armor = 6;
-            case DIAMOND_CHESTPLATE -> { armor = 8; toughness = 2; }
-            case NETHERITE_CHESTPLATE -> { armor = 8; toughness = 3; knockbackResistance = 0.1; }
-        }
+        double armor = getBaseArmorAttribute(material, "armor");
+        double toughness = getBaseArmorAttribute(material, "toughness");
+        double knockbackResistance = getBaseArmorAttribute(material, "knockbackResistance");
 
         if (armor > 0) {
             meta.addAttributeModifier(Attribute.ARMOR, new AttributeModifier(ARMOR_MODIFIER_KEY, armor, AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.CHEST));
@@ -115,6 +128,12 @@ public class ChestplateProfile implements IUpgradeableProfile {
         }
     }
 
+    /**
+     * Gets the base attribute value for a given chestplate material and attribute type.
+     * @param material The material of the chestplate.
+     * @param type The type of attribute ("armor", "toughness", "knockbackResistance").
+     * @return The base value of the attribute.
+     */
     private double getBaseArmorAttribute(Material material, String type) {
         return switch (material) {
             case LEATHER_CHESTPLATE -> "armor".equals(type) ? 3 : 0;
