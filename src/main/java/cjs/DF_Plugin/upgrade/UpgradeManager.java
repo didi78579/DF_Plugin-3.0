@@ -2,12 +2,12 @@ package cjs.DF_Plugin.upgrade;
 
 import cjs.DF_Plugin.DF_Main;
 import cjs.DF_Plugin.command.etc.item.ItemNameManager;
-import cjs.DF_Plugin.upgrade.item.UpgradeItems;
+import cjs.DF_Plugin.item.CustomItemFactory;
+import cjs.DF_Plugin.item.UpgradeItems;
 import cjs.DF_Plugin.upgrade.profile.IUpgradeableProfile;
 import cjs.DF_Plugin.upgrade.profile.ProfileRegistry;
 import cjs.DF_Plugin.upgrade.specialability.ISpecialAbility;
 import cjs.DF_Plugin.upgrade.specialability.SpecialAbilityManager;
-import cjs.DF_Plugin.world.item.SpecialItemListener;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
@@ -26,11 +26,9 @@ public class UpgradeManager {
 
     private final DF_Main plugin;
     private final ProfileRegistry profileRegistry;
-    private final Random random = new Random();
     private static final String PREFIX = "§6[강화] §f";
     public static final int MAX_UPGRADE_LEVEL = 10;
 
-    // 특수 능력 및 아이템 식별을 위한 키
     public static final NamespacedKey ITEM_UUID_KEY = new NamespacedKey(DF_Main.getInstance(), "item_uuid");
     public static final NamespacedKey SPECIAL_ABILITY_KEY = new NamespacedKey(DF_Main.getInstance(), "special_ability");
     public static final NamespacedKey TRIDENT_MODE_KEY = new NamespacedKey(DF_Main.getInstance(), "trident_mode");
@@ -43,12 +41,10 @@ public class UpgradeManager {
     public int getUpgradeLevel(ItemStack item) {
         if (item == null || !item.hasItemMeta()) return 0;
         ItemMeta meta = item.getItemMeta();
-        if (meta != null && meta.getLore() != null) {
+        if (meta.getLore() != null) {
             for (String line : meta.getLore()) {
-                // 별이 포함된 라인을 찾습니다.
                 if (line.contains("★") || line.contains("☆")) {
                     int level = 0;
-                    // 색상 코드를 제거하고 채워진 별의 개수를 셉니다.
                     for (char c : ChatColor.stripColor(line).toCharArray()) {
                         if (c == '★') {
                             level++;
@@ -62,14 +58,12 @@ public class UpgradeManager {
     }
 
     public void attemptUpgrade(Player player, ItemStack item) {
-        // 1. 강화 대상 분석
         IUpgradeableProfile profile = this.profileRegistry.getProfile(item.getType());
         if (profile == null) {
             player.sendMessage(PREFIX + "§c이 아이템은 강화할 수 없습니다.");
             return;
         }
 
-        // 3. 강화 정보 불러오기 (레벨)
         final int currentLevel = getUpgradeLevel(item);
 
         if (currentLevel >= MAX_UPGRADE_LEVEL) {
@@ -77,7 +71,6 @@ public class UpgradeManager {
             return;
         }
 
-        // 2. 강화 비용 확인
         int requiredStones = currentLevel + 1;
         if (!hasEnoughStones(player, requiredStones)) {
             player.sendMessage(PREFIX + "§c강화석이 부족합니다! (필요: " + requiredStones + "개)");
@@ -85,14 +78,12 @@ public class UpgradeManager {
             return;
         }
 
-        // 4. 강화 실행
-        consumeStones(player, requiredStones); // 강화석 소모
+        consumeStones(player, requiredStones);
         FileConfiguration config = plugin.getGameConfigManager().getConfig();
         String path = "upgrade.level-settings." + currentLevel;
 
         if (!config.isConfigurationSection(path)) {
             player.sendMessage(PREFIX + "§c다음 강화 레벨에 대한 설정이 없습니다. (레벨: " + currentLevel + ")");
-            // 설정이 없으면 강화석 환불
             player.getInventory().addItem(UpgradeItems.createUpgradeStone(requiredStones));
             return;
         }
@@ -100,49 +91,39 @@ public class UpgradeManager {
         double successChance = config.getDouble(path + ".success", 0.0);
         double failureChance = config.getDouble(path + ".failure", 0.0);
         double downgradeChance = config.getDouble(path + ".downgrade", 0.0);
-        // 파괴 확률을 명시적으로 읽어와 부동소수점 오류 및 설정 오류 가능성을 줄입니다.
         double destroyChance = config.getDouble(path + ".destroy", 0.0);
 
-        // 확률의 총합을 기준으로 굴림을 정규화하여, 합계가 1이 아니더라도 의도대로 작동하게 합니다.
         double totalChance = successChance + failureChance + downgradeChance + destroyChance;
         if (totalChance <= 0) {
-            // 확률 설정이 잘못된 경우, 안전하게 실패(유지) 처리합니다.
             player.getWorld().playSound(player.getLocation(), Sound.BLOCK_ANVIL_LAND, 1.0f, 1.0f);
             return;
         }
 
+        Random random = new Random();
         double roll = random.nextDouble() * totalChance;
 
         if (roll < successChance) {
-            // 성공
             int newLevel = currentLevel + 1;
             setUpgradeLevel(item, newLevel);
             player.getWorld().playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, 0.7f, 1.5f);
-            // 10강 달성 시 전설 알림
             if (newLevel == MAX_UPGRADE_LEVEL) {
                 handleLegendaryUpgrade(player, item);
             }
         } else if (roll < successChance + failureChance) {
-            // 실패 (변화 없음)
             player.getWorld().playSound(player.getLocation(), Sound.BLOCK_ANVIL_LAND, 0.7f, 1.0f);
-        } else if (roll < successChance + failureChance + downgradeChance) { // This now corresponds to the destroyChance part of the roll
-            // 등급 하락
+        } else if (roll < successChance + failureChance + downgradeChance) {
             int newLevel = Math.max(0, currentLevel - 1);
             setUpgradeLevel(item, newLevel);
             player.getWorld().playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 0.7f, 1.5f);
         } else {
-            // 파괴 또는 초기화
             if (item.getType() == Material.MACE) {
-                // 철퇴인 경우, 파괴 대신 초기화
                 player.sendMessage(PREFIX + "§c강화에 실패하여 철퇴가 모든 힘을 잃고 0강으로 초기화되었습니다.");
                 player.getWorld().playSound(player.getLocation(), Sound.BLOCK_ANVIL_BREAK, 1.0f, 1.0f);
-                setUpgradeLevel(item, 0); // 강화 레벨 0으로 설정
+                setUpgradeLevel(item, 0);
             } else {
-                // 철퇴가 아닌 경우, 파괴
-                ItemStack destroyedItem = item.clone(); // Make a copy for the message
+                ItemStack destroyedItem = item.clone();
                 String itemName = destroyedItem.getItemMeta() != null && destroyedItem.getItemMeta().hasDisplayName() ? destroyedItem.getItemMeta().getDisplayName() : destroyedItem.getType().name();
 
-                // Adventure API를 사용하여 호버 가능한 메시지 생성
                 Component hoverableItemName = LegacyComponentSerializer.legacySection().deserialize(itemName)
                         .hoverEvent(destroyedItem.asHoverEvent());
 
@@ -164,67 +145,45 @@ public class UpgradeManager {
     public ItemStack switchTridentMode(Player player, ItemStack originalTrident) {
         if (originalTrident == null || originalTrident.getType() != Material.TRIDENT) return originalTrident;
 
-        // 모드 변환 쿨다운을 확인합니다.
         SpecialAbilityManager abilityManager = plugin.getSpecialAbilityManager();
         if (abilityManager.getRemainingCooldown(player, SpecialAbilityManager.MODE_SWITCH_COOLDOWN_KEY) > 0) {
-            // 쿨다운 중에는 아무런 동작도, 소리도 없이 조용히 막습니다.
             return originalTrident;
         }
 
-        // 원본 아이템을 복제하여 수정합니다.
         ItemStack trident = originalTrident.clone();
         ItemMeta meta = trident.getItemMeta();
         if (meta == null) return originalTrident;
 
-        // 모드 변경 전, '용의 심장'으로 부여된 추가 공격력을 미리 읽어옵니다.
         double bonusDamage = 0;
         if (originalTrident.hasItemMeta()) {
-            bonusDamage = originalTrident.getItemMeta().getPersistentDataContainer().getOrDefault(SpecialItemListener.BONUS_DAMAGE_KEY, PersistentDataType.DOUBLE, 0.0);
+            bonusDamage = originalTrident.getItemMeta().getPersistentDataContainer().getOrDefault(CustomItemFactory.BONUS_DAMAGE_KEY, PersistentDataType.DOUBLE, 0.0);
         }
 
-        // 1. 강화 레벨과 현재 모드를 가져옵니다.
         final int level = getUpgradeLevel(trident);
         final String currentMode = meta.getPersistentDataContainer().getOrDefault(TRIDENT_MODE_KEY, PersistentDataType.STRING, "backflow");
-
-        // 2. 새로운 모드를 결정합니다.
         final String newMode = currentMode.equals("backflow") ? "lightning_spear" : "backflow";
 
-        // 3. 아이템의 메타데이터에 새로운 모드를 설정합니다.
-        //    setUpgradeLevel이 이 값을 읽어 모든 속성을 재설정할 것입니다.
         meta.getPersistentDataContainer().set(TRIDENT_MODE_KEY, PersistentDataType.STRING, newMode);
 
-        // 읽어온 추가 공격력 데이터를 새로운 메타데이터에 다시 저장합니다.
         if (bonusDamage > 0) {
-            meta.getPersistentDataContainer().set(SpecialItemListener.BONUS_DAMAGE_KEY, PersistentDataType.DOUBLE, bonusDamage);
+            meta.getPersistentDataContainer().set(CustomItemFactory.BONUS_DAMAGE_KEY, PersistentDataType.DOUBLE, bonusDamage);
         }
-        trident.setItemMeta(meta); // 변경된 모드 정보를 아이템에 즉시 적용합니다.
+        trident.setItemMeta(meta);
 
-        // 4. setUpgradeLevel을 호출하여 아이템의 모든 속성(이름, 로어, 인챈트 등)을 새로운 모드에 맞게 재구성합니다.
-        //    이것이 "생성 로직을 호출하는" 부분에 해당합니다.
         setUpgradeLevel(trident, level);
 
-        // 5. 모드 변경 후 즉시 패시브 효과(공전)가 적용되도록 강제로 능력을 업데이트합니다.
         abilityManager.forceEquipAndCleanup(player, trident);
 
-        // 6. 쿨다운을 설정하고 피드백 메시지 및 사운드를 재생합니다.
         abilityManager.setCooldown(player, SpecialAbilityManager.MODE_SWITCH_COOLDOWN_KEY, SpecialAbilityManager.MODE_SWITCH_COOLDOWN_SECONDS, "§7모드 변환");
-        String modeName;
-        if (newMode.equals("backflow")) {
-            modeName = "§3역류";
-        } else { // lightning_spear
-            modeName = "§b뇌창";
-        }
-        // 모드 전환 시 특이한 천둥 소리(번개가 내리치는 소리)로 설정합니다.
+        
         player.playSound(player.getLocation(), Sound.ITEM_TRIDENT_THUNDER, 1.0f, 1.0f);
 
-        // 7. 모드 변경 파티클 효과 재생
-        // [버그 수정] 파티클 색상이 반대로 적용되던 문제를 수정합니다. (뇌창: 노란색, 역류: 푸른색)
         final Color particleColor = newMode.equals("lightning_spear") ? Color.YELLOW : Color.BLUE;
         new BukkitRunnable() {
             private double angle = 0;
             private double height = 0;
             private final double radius = 0.7;
-            private final int duration = 30; // 1.5초 (틱 단위)
+            private final int duration = 30;
             private int ticks = 0;
 
             @Override
@@ -234,11 +193,11 @@ public class UpgradeManager {
                     return;
                 }
 
-                height = (double) ticks / duration * 2.2; // 2.2 블록 높이까지 상승
-                angle += 15; // 매 틱 15도씩 회전
+                height = (double) ticks / duration * 2.2;
+                angle += 15;
 
-                for (int i = 0; i < 5; i++) { // 5갈래 파티클
-                    double strandAngle = Math.toRadians(angle + (i * 72)); // 360 / 5 = 72도 간격
+                for (int i = 0; i < 5; i++) {
+                    double strandAngle = Math.toRadians(angle + (i * 72));
                     double x = Math.cos(strandAngle) * radius;
                     double z = Math.sin(strandAngle) * radius;
 
@@ -252,7 +211,11 @@ public class UpgradeManager {
         return trident;
     }
 
-
+    /**
+     * Sets the upgrade level for an item, updating its display name, lore, and attributes.
+     * @param item The item to modify.
+     * @param level The new upgrade level.
+     */
     public void setUpgradeLevel(ItemStack item, int level) {
         ItemMeta meta = item.getItemMeta();
         if (meta == null) return;
@@ -260,24 +223,28 @@ public class UpgradeManager {
         IUpgradeableProfile profile = profileRegistry.getProfile(item.getType());
         if (profile == null) return;
 
-        // 1. 이름 생성 및 설정
         String finalName = generateDisplayName(meta, item.getType(), level);
         meta.setDisplayName(finalName);
 
-        // 2. 로어 생성
+        // 로어를 새로 생성하기 전에 기존 로어를 모두 제거합니다.
+        meta.setLore(new ArrayList<>());
         List<String> finalLore = generateLore(profile, item, meta, level);
         meta.setLore(finalLore);
 
-        // 3. 아이템 속성 적용 (AttributeModifiers 등)
         profile.applyAttributes(item, meta, level);
 
-        // 4. PDC 데이터 업데이트 (특수 능력 키, UUID 등)
         updatePersistentData(meta, profile, item, level);
 
-        // 5. 최종 메타데이터 적용
         item.setItemMeta(meta);
     }
 
+    /**
+     * Generates the display name for an item based on its custom name and upgrade level.
+     * @param meta The item's meta.
+     * @param material The item's material.
+     * @param level The upgrade level.
+     * @return The generated display name.
+     */
     private String generateDisplayName(ItemMeta meta, Material material, int level) {
         String customName = meta.getPersistentDataContainer().get(ItemNameManager.CUSTOM_NAME_KEY, PersistentDataType.STRING);
         String customColorChar = meta.getPersistentDataContainer().get(ItemNameManager.CUSTOM_COLOR_KEY, PersistentDataType.STRING);
@@ -286,6 +253,7 @@ public class UpgradeManager {
         if (customName != null && !customName.isEmpty()) {
             baseName = customName;
         } else if (meta.hasDisplayName()) {
+            // 기존 이름에서 "전설의 " 또는 "[모드]" 부분을 제거하여 기본 이름을 추출합니다.
             String currentName = ChatColor.stripColor(meta.getDisplayName());
             if (currentName.startsWith("전설의 ")) {
                 currentName = currentName.substring("전설의 ".length()).trim();
@@ -299,22 +267,38 @@ public class UpgradeManager {
             baseName = null;
         }
 
-        if (level >= MAX_UPGRADE_LEVEL) {
-            String colorCode = (customColorChar != null) ? "§" + customColorChar : "§6";
-            String nameToUse = (baseName != null) ? baseName : material.name().toLowerCase().replace('_', ' ');
-            return colorCode + "전설의 " + nameToUse;
-        } else if (baseName != null) {
-            return "§f" + baseName;
-        } else {
-            return null;
+        // 이름이 없는 경우, 기본 이름을 설정합니다. (예: 삼지창)
+        if (baseName == null || baseName.isEmpty()) {
+            if (material == Material.TRIDENT) {
+                baseName = "삼지창";
+            } else {
+                // 다른 아이템 타입에 대한 기본 이름 설정이 필요하다면 여기에 추가
+                return null; // 기본 이름이 없으면 null 반환
+            }
         }
+
+        // 최종 색상을 결정합니다.
+        String colorCode;
+        if (level >= MAX_UPGRADE_LEVEL) {
+            colorCode = (customColorChar != null) ? "§" + customColorChar : "§6"; // 10강이면 커스텀 색상 또는 금색
+        } else {
+            colorCode = "§f"; // 10강 미만이면 흰색
+        }
+
+        return colorCode + baseName;
     }
 
+
+    /**
+     * Generates the complete lore for an item based on its profile, stats, and upgrade level.
+     * @param profile The item's upgrade profile.
+     * @param item The item stack.
+     * @param meta The item's meta.
+     * @param level The upgrade level.
+     * @return A list of strings representing the new lore.
+     */
     private List<String> generateLore(IUpgradeableProfile profile, ItemStack item, ItemMeta meta, int level) {
         List<String> lore = new ArrayList<>();
-
-        // '용의 심장'으로 부여된 추가 공격력을 가져옵니다.
-        double bonusDamage = meta.getPersistentDataContainer().getOrDefault(SpecialItemListener.BONUS_DAMAGE_KEY, PersistentDataType.DOUBLE, 0.0);
 
         lore.add(generateStarLore(level));
 
@@ -330,6 +314,14 @@ public class UpgradeManager {
             lore.addAll(passiveLore);
         }
 
+        // '추가 공격력' 로어를 먼저 추가
+        double bonusDamage = meta.getPersistentDataContainer().getOrDefault(CustomItemFactory.BONUS_DAMAGE_KEY, PersistentDataType.DOUBLE, 0.0);
+        if (bonusDamage > 0) {
+            lore.add("");
+            lore.add(String.format("§d추가 공격력: +%.0f", bonusDamage));
+        }
+
+        // 그 다음에 [특수능력] 로어 추가
         if (level >= MAX_UPGRADE_LEVEL) {
             List<String> abilityLore = generateAbilityLore(profile, item, meta);
             if (!abilityLore.isEmpty()) {
@@ -338,6 +330,7 @@ public class UpgradeManager {
             }
         }
 
+        // 기본 스탯 로어 추가 (이제 프로필에서 '용의 심장' 로어를 제거해야 함)
         List<String> baseStatsLore = profile.getBaseStatsLore(item, level, bonusDamage);
         if (!baseStatsLore.isEmpty()) {
             lore.add("");
@@ -347,6 +340,11 @@ public class UpgradeManager {
         return lore;
     }
 
+    /**
+     * Generates the star rating string (e.g., ★★★☆☆☆☆☆☆☆) for the item's lore.
+     * @param level The current upgrade level.
+     * @return The formatted star string.
+     */
     private String generateStarLore(int level) {
         StringBuilder stars = new StringBuilder();
         for (int i = 0; i < level; i++) {
@@ -358,6 +356,11 @@ public class UpgradeManager {
         return stars.toString().trim();
     }
 
+    /**
+     * Generates the lore lines detailing the chances of success, failure, etc., for the next upgrade.
+     * @param level The current upgrade level.
+     * @return A list of strings for the chance-related lore.
+     */
     private List<String> generateChanceLore(int level) {
         List<String> chanceLore = new ArrayList<>();
         FileConfiguration config = plugin.getGameConfigManager().getConfig();
@@ -386,8 +389,15 @@ public class UpgradeManager {
         return chanceLore;
     }
 
+    /**
+     * Generates the lore lines for the item's special ability.
+     * @param profile The item's upgrade profile.
+     * @param item The item stack.
+     * @param meta The item's meta.
+     * @return A list of strings for the ability lore.
+     */
     private List<String> generateAbilityLore(IUpgradeableProfile profile, ItemStack item, ItemMeta meta) {
-        ISpecialAbility ability = null;
+        ISpecialAbility ability;
         if (item.getType() == Material.TRIDENT) {
             String currentMode = meta.getPersistentDataContainer().getOrDefault(TRIDENT_MODE_KEY, PersistentDataType.STRING, "backflow");
             ability = plugin.getSpecialAbilityManager().getRegisteredAbility(currentMode);
@@ -404,11 +414,18 @@ public class UpgradeManager {
         return Collections.emptyList();
     }
 
+    /**
+     * Updates the persistent data on an item, such as its special ability key and unique ID.
+     * @param meta The item's meta to modify.
+     * @param profile The item's upgrade profile.
+     * @param item The item stack.
+     * @param level The upgrade level.
+     */
     private void updatePersistentData(ItemMeta meta, IUpgradeableProfile profile, ItemStack item, int level) {
         if (level < MAX_UPGRADE_LEVEL) {
             meta.getPersistentDataContainer().remove(SPECIAL_ABILITY_KEY);
-        } else { // level >= MAX_UPGRADE_LEVEL
-            ISpecialAbility abilityToSave = null;
+        } else {
+            ISpecialAbility abilityToSave;
             if (item.getType() == Material.TRIDENT) {
                 String currentMode = meta.getPersistentDataContainer().getOrDefault(TRIDENT_MODE_KEY, PersistentDataType.STRING, "backflow");
                 abilityToSave = plugin.getSpecialAbilityManager().getRegisteredAbility(currentMode);
@@ -426,13 +443,17 @@ public class UpgradeManager {
         }
     }
 
+    /**
+     * Handles the server-wide broadcast and sound effect when an item reaches the legendary (max) upgrade level.
+     * @param player The player who achieved the upgrade.
+     * @param item The legendary item.
+     */
     private void handleLegendaryUpgrade(Player player, ItemStack item) {
         ItemMeta meta = item.getItemMeta();
         if (meta == null || !meta.hasDisplayName()) return;
 
         String legendaryName = meta.getDisplayName();
         
-        // Adventure API를 사용하여 호버 가능한 메시지 생성
         Component hoverableItemName = LegacyComponentSerializer.legacySection().deserialize(legendaryName)
                 .hoverEvent(item.asHoverEvent());
 
@@ -442,30 +463,40 @@ public class UpgradeManager {
                 .append(hoverableItemName)
                 .append(Component.text("이(가) 탄생했습니다!"))
                 .build();
-        // 모든 플레이어에게 메시지 전송 및 소리 재생
         for (Player p : Bukkit.getOnlinePlayers()) {
             p.sendMessage(broadcastMessage);
             p.playSound(p.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.7f, 1.0f);
         }
     }
 
+    /**
+     * Checks if a player has enough upgrade stones in their inventory.
+     * @param player The player to check.
+     * @param amount The required amount of stones.
+     * @return True if the player has enough stones, false otherwise.
+     */
     private boolean hasEnoughStones(Player player, int amount) {
         int count = 0;
         for (ItemStack item : player.getInventory().getContents()) {
-            if (item != null && UpgradeItems.isUpgradeStone(item)) {
+            if (UpgradeItems.isUpgradeStone(item)) {
                 count += item.getAmount();
             }
         }
         return count >= amount;
     }
 
+    /**
+     * Consumes a specified amount of upgrade stones from a player's inventory.
+     * @param player The player whose stones will be consumed.
+     * @param amount The amount of stones to consume.
+     */
     private void consumeStones(Player player, int amount) {
         int remaining = amount;
         ItemStack[] contents = player.getInventory().getContents();
         for (int i = 0; i < contents.length; i++) {
             if (remaining <= 0) break;
             ItemStack item = contents[i];
-            if (item != null && UpgradeItems.isUpgradeStone(item)) {
+            if (UpgradeItems.isUpgradeStone(item)) {
                 int toTake = Math.min(remaining, item.getAmount());
                 item.setAmount(item.getAmount() - toTake);
                 remaining -= toTake;
@@ -476,8 +507,13 @@ public class UpgradeManager {
         }
     }
 
+    /**
+     * Applies enchantments to an item's meta based on its upgrade level and a map of enchantment bonuses.
+     * @param meta The item's meta to modify.
+     * @param level The item's upgrade level.
+     * @param enchantBonuses A map of enchantments to their bonus values.
+     */
     public static void applyCyclingEnchantments(ItemMeta meta, int level, Map<Enchantment, Double> enchantBonuses) {
-        // 먼저, 이 프로필에서 관리하는 모든 인챈트를 제거하여, 강화 등급이 변경될 때마다 레벨을 새로 계산합니다.
         for (Enchantment enchant : enchantBonuses.keySet()) {
             if (meta.hasEnchant(enchant)) {
                 meta.removeEnchant(enchant);
@@ -485,7 +521,7 @@ public class UpgradeManager {
         }
 
         if (level <= 0) {
-            return; // 강화 레벨이 0 이하면 아무 인챈트도 적용하지 않음
+            return;
         }
 
         List<Enchantment> enchants = new ArrayList<>(enchantBonuses.keySet());
@@ -494,7 +530,6 @@ public class UpgradeManager {
             return;
         }
 
-        // 특별 규칙: 3개의 인챈트가 있고 10강일 때, 모두 4레벨로 설정
         if (numEnchants == 3 && level == 10) {
             for (Enchantment enchant : enchants) {
                 meta.addEnchant(enchant, 4, true);
@@ -502,7 +537,6 @@ public class UpgradeManager {
             return;
         }
 
-        // 일반적인 번갈아 오르는 규칙 (Round-robin)
         int baseLevel = level / numEnchants;
         int extraLevels = level % numEnchants;
 
@@ -516,29 +550,31 @@ public class UpgradeManager {
     }
 
     /**
-     * 아이템에 강화 레벨과 특정 인챈트를 동시에 설정합니다.
-     * @param item 대상 아이템
-     * @param level 설정할 레벨
-     * @param enchantment 부여할 인챈트
-     * @param enchantLevel 인챈트 레벨
-     * @return 수정된 아이템
+     * A utility method to set an item's upgrade level and a specific enchantment.
+     * @param item The item to modify.
+     * @param level The new upgrade level.
+     * @param enchantment The enchantment to apply.
+     * @param enchantLevel The level of the enchantment.
+     * @return The modified item stack.
      */
     public ItemStack setItemLevel(ItemStack item, int level, Enchantment enchantment, int enchantLevel) {
         IUpgradeableProfile profile = profileRegistry.getProfile(item.getType());
         if (profile != null) {
-            // 프로필이 존재하면, 레벨 설정 로직을 통해 이름, 로어, 기본 속성을 적용합니다.
             setUpgradeLevel(item, level);
         }
 
-        // 프로필 존재 여부와 관계없이 요청된 특정 인챈트를 추가로 부여합니다.
         ItemMeta meta = item.getItemMeta();
         meta.addEnchant(enchantment, enchantLevel, true);
         item.setItemMeta(meta);
         return item;
     }
 
-
     public ProfileRegistry getProfileRegistry() {
         return profileRegistry;
+    }
+
+    public boolean isSpear(ItemStack item) {
+        if (item == null) return false;
+        return item.getType().name().endsWith("_SPEAR");
     }
 }

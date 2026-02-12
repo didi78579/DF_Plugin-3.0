@@ -30,12 +30,14 @@ public final class CustomItemFactory {
     public static final NamespacedKey OBSIDIAN_POTION_KEY = new NamespacedKey(DF_Main.getInstance(), "obsidian_potion");
 
     // --- Item Stat Keys (for SpecialItemListener) ---
+    public static final NamespacedKey BONUS_DAMAGE_KEY = new NamespacedKey(DF_Main.getInstance(), "bonus_damage");
+    public static final NamespacedKey BONUS_HEALTH_KEY = new NamespacedKey(DF_Main.getInstance(), "bonus_health");
     public static final NamespacedKey BONUS_CDR_KEY = new NamespacedKey(DF_Main.getInstance(), "bonus_cdr");
     public static final NamespacedKey BONUS_GENERIC_REDUCTION_KEY = new NamespacedKey(DF_Main.getInstance(), "bonus_generic_reduction");
     public static final NamespacedKey BONUS_SKILL_REDUCTION_KEY = new NamespacedKey(DF_Main.getInstance(), "bonus_skill_reduction");
     public static final NamespacedKey BONUS_SPEED_KEY = new NamespacedKey(DF_Main.getInstance(), "bonus_speed");
     public static final NamespacedKey DEMON_SOUL_USES_KEY = new NamespacedKey(DF_Main.getInstance(), "demon_soul_uses");
-    public static final NamespacedKey BONUS_DAMAGE_KEY = new NamespacedKey(DF_Main.getInstance(), "bonus_damage");
+    public static final NamespacedKey DRAGONS_HEART_USES_KEY = new NamespacedKey(DF_Main.getInstance(), "dragons_heart_uses");
 
     private CustomItemFactory() {
         // 유틸리티 클래스는 인스턴스화할 수 없습니다.
@@ -43,24 +45,44 @@ public final class CustomItemFactory {
 
     // --- Item Creation Methods ---
 
+    /**
+     * '파일런 코어' 아이템을 생성합니다.
+     * @return 생성된 파일런 코어 ItemStack.
+     */
     public static ItemStack createMainPylonCore() {
-        return createItem(Material.BEACON, "§b§l파일런 코어", MAIN_PYLON_CORE_KEY, "§7가문의 중심이 되는 강력한 코어입니다.", "§7설치 시 가문의 영역이 생성됩니다.");
+        return createItem(Material.BEACON, "§b§l파일런 코어", MAIN_PYLON_CORE_KEY, Enchantment.LURE, "§7가문의 중심이 되는 강력한 코어입니다.", "§7설치 시 가문의 영역이 생성됩니다.");
     }
 
+    /**
+     * '보조 파일런 코어' 아이템을 생성합니다.
+     * @return 생성된 보조 파일런 코어 ItemStack.
+     */
     public static ItemStack createAuxiliaryPylonCore() {
-        return createItem(Material.NETHER_STAR, "§b보조 파일런 코어", AUXILIARY_PYLON_CORE_KEY, "§7마계의 주인을 처치한 자에게 주어지는", "§7강력한 에너지의 집합체.");
+        return createItem(Material.BEACON, "§d보조 파일런 코어", AUXILIARY_PYLON_CORE_KEY, Enchantment.LURE, "§7주 파일런의 신호기 범위 내에 설치하여", "§7가문의 영역을 확장할 수 있습니다.");
     }
 
+    /**
+     * '귀환 주문서' 아이템을 생성합니다.
+     * @return 생성된 귀환 주문서 ItemStack.
+     */
     public static ItemStack createReturnScroll() {
-        return createItem(Material.GLOBE_BANNER_PATTERN, "§b귀환 주문서", RETURN_SCROLL_KEY, "§7가문 파일런 영역 내의 안전한 곳으로", "§7자신을 소환합니다.", "", "§e[사용법] §f손에 들고 우클릭하여 사용합니다.", "§c(시전 중 이동하거나 피격 시 취소)");
+        return createItem(Material.GLOBE_BANNER_PATTERN, "§b귀환 주문서", RETURN_SCROLL_KEY, Enchantment.FORTUNE, "§7가문 파일런 영역 내의 안전한 곳으로", "§7자신을 소환합니다.", "", "§e[사용법] §f손에 들고 우클릭하여 사용합니다.", "§c(시전 중 이동하거나 피격 시 취소)");
     }
 
+    /**
+     * '악마의 영혼' 아이템을 생성합니다.
+     * @return 생성된 악마의 영혼 ItemStack.
+     */
     public static ItemStack createDemonSoul() {
-        return createItem(Material.GHAST_TEAR, "§4악마의 영혼", DEMON_SOUL_KEY, "§7마계에서 타락한 영혼의 파편.", "§7음산한 기운을 내뿜는다.");
+        return createItem(Material.SOUL_LANTERN, "§4악마의 영혼", DEMON_SOUL_KEY, Enchantment.LURE, "§7마계에서 타락한 영혼의 파편.");
     }
 
+    /**
+     * '용의 심장' 아이템을 생성합니다.
+     * @return 생성된 용의 심장 ItemStack.
+     */
     public static ItemStack createDragonsHeart() {
-        return createItem(Material.DRAGON_EGG, "§d용의 심장", DRAGONS_HEART_KEY, "§7드래곤의 힘이 응축된 심장.", "§7커서에 들고 10강 이상의 무기를 클릭하면", "§7공격력을 영구적으로 1 증가시킵니다.");
+    return createItem(Material.ENDERMAN_SPAWN_EGG, "§d용의 심장", DRAGONS_HEART_KEY, Enchantment.LURE, "§7드래곤의 힘이 응축된 심장.");
     }
 
     public static ItemStack createObsidianPotion() {
@@ -105,13 +127,13 @@ public final class CustomItemFactory {
 
     // --- Helper Methods ---
 
-    private static ItemStack createItem(Material material, String name, NamespacedKey key, String... lore) {
+    private static ItemStack createItem(Material material, String name, NamespacedKey key, Enchantment enchant, String... lore) {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
             meta.setDisplayName(name);
             meta.setLore(Arrays.asList(lore));
-            meta.addEnchant(Enchantment.LURE, 1, false);
+            meta.addEnchant(enchant, 1, false);
             meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
             meta.getPersistentDataContainer().set(key, PersistentDataType.BYTE, (byte) 1);
             item.setItemMeta(meta);
@@ -133,6 +155,6 @@ public final class CustomItemFactory {
 
     public static boolean isWeapon(Material material) {
         String name = material.name();
-        return name.endsWith("_SWORD") || name.endsWith("_AXE") || material == Material.TRIDENT || material == Material.MACE;
+        return name.endsWith("_SWORD") ||name.endsWith("_SPEAR") || material == Material.TRIDENT || material == Material.MACE;
     }
 }

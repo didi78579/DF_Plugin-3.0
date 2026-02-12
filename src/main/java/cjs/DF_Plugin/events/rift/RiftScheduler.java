@@ -2,25 +2,27 @@ package cjs.DF_Plugin.events.rift;
 
 import cjs.DF_Plugin.DF_Main;
 import org.bukkit.Bukkit;
+import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.event.Listener;
+import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
-public class RiftScheduler implements Listener {
+public class RiftScheduler {
 
     private final DF_Main plugin;
 
-    private enum State { COOLDOWN, COUNTDOWN }
+    private enum State { COOLDOWN, INACTIVE }
     private State currentState;
-    private long nextStateTime; // Either cooldown end time or event start time
-    private BukkitTask dayCheckTask;
+    private long nextEventTime;
+    private BukkitTask checkTask;
 
     private static final String CONFIG_PATH_ROOT = "events.rift.";
     private static final String CONFIG_PATH_STATE = CONFIG_PATH_ROOT + "state";
-    private static final String CONFIG_PATH_NEXT_STATE_TIME = CONFIG_PATH_ROOT + "next-state-time";
+    private static final String CONFIG_PATH_NEXT_EVENT_TIME = CONFIG_PATH_ROOT + "next-event-time";
 
     public RiftScheduler(DF_Main plugin) {
         this.plugin = plugin;
@@ -29,58 +31,59 @@ public class RiftScheduler implements Listener {
     private void loadState() {
         FileConfiguration config = plugin.getEventDataManager().getConfig();
         if (!config.contains(CONFIG_PATH_STATE)) {
-            plugin.getLogger().info("[차원의 균열] Scheduler state not found. Initializing.");
-            startNewCooldown(); // 새로운 쿨다운 시작 및 파일 생성
+            plugin.getLogger().info("[차원의 균열] 스케줄러 상태를 찾을 수 없어 초기화합니다.");
+            this.currentState = State.INACTIVE;
+            this.nextEventTime = 0;
             return;
         }
 
-        this.currentState = State.valueOf(config.getString(CONFIG_PATH_STATE, "COOLDOWN"));
-        this.nextStateTime = config.getLong(CONFIG_PATH_NEXT_STATE_TIME, 0);
+        this.currentState = State.valueOf(config.getString(CONFIG_PATH_STATE, "INACTIVE"));
+        this.nextEventTime = config.getLong(CONFIG_PATH_NEXT_EVENT_TIME, 0);
 
-        // If an event is already active (handled by RiftManager's own persistence),
-        // we should just wait. The scheduler's job is to start the *next* event.
         if (plugin.getRiftManager().isEventActive()) {
-            plugin.getLogger().info("[차원의 균열] An event is already active. Scheduler will wait.");
+            plugin.getLogger().info("[차원의 균열] 이벤트가 이미 활성화 상태이므로 스케줄러는 대기합니다.");
             return;
         }
 
-        // If server was off, check if we missed the state transition
-        if (System.currentTimeMillis() >= nextStateTime) {
-            if (currentState == State.COOLDOWN) {
-                startCountdown();
-            } else if (currentState == State.COUNTDOWN) {
-                startEventNow();
-            }
+        if (currentState == State.COOLDOWN && System.currentTimeMillis() >= nextEventTime) {
+            startEventNow();
         }
 
-        plugin.getLogger().info("[차원의 균열] Loaded scheduler state: " + currentState);
+        plugin.getLogger().info("[차원의 균열] 스케줄러 상태를 불러왔습니다: " + currentState);
     }
 
     private void saveState() {
         FileConfiguration config = plugin.getEventDataManager().getConfig();
         config.set(CONFIG_PATH_STATE, currentState.name());
-        config.set(CONFIG_PATH_NEXT_STATE_TIME, nextStateTime);
+        config.set(CONFIG_PATH_NEXT_EVENT_TIME, nextEventTime);
         plugin.getEventDataManager().saveConfig();
     }
 
     public void startScheduler() {
         loadState();
-        if (dayCheckTask != null) {
-            dayCheckTask.cancel();
+        if (checkTask != null) {
+            checkTask.cancel();
         }
 
-        dayCheckTask = new BukkitRunnable() {
+        checkTask = new BukkitRunnable() {
             @Override
             public void run() {
                 if (!plugin.getGameConfigManager().getConfig().getBoolean("events.rift.enabled", true)) return;
                 if (!plugin.getGameStartManager().isGameStarted()) return;
-                if (plugin.getRiftManager().isEventActive()) return; // Don't do anything if an event is running
+                if (plugin.getRiftManager().isEventActive()) return;
 
-                if (System.currentTimeMillis() >= nextStateTime) {
-                    if (currentState == State.COOLDOWN) {
-                        startCountdown();
-                    } else if (currentState == State.COUNTDOWN) {
-                        startEventNow();
+                if (currentState == State.COOLDOWN && System.currentTimeMillis() >= nextEventTime) {
+                    startEventNow();
+                }
+                
+                // 보스바 플레이어 관리
+                if (plugin.getRiftManager().isEventActive()) {
+                    for (Player player : Bukkit.getOnlinePlayers()) {
+                        if (player.getWorld().getEnvironment() == World.Environment.NORMAL) {
+                            plugin.getRiftManager().showBarToPlayer(player);
+                        } else {
+                            plugin.getRiftManager().hideBarFromPlayer(player);
+                        }
                     }
                 }
             }
@@ -88,42 +91,46 @@ public class RiftScheduler implements Listener {
     }
 
     public void stopScheduler() {
-        if (dayCheckTask != null) {
-            dayCheckTask.cancel();
-            dayCheckTask = null;
+        if (checkTask != null) {
+            checkTask.cancel();
+            checkTask = null;
         }
+        this.currentState = State.INACTIVE;
+        saveState();
     }
 
     public void startEventNow() {
         if (!plugin.getGameConfigManager().getConfig().getBoolean("events.rift.enabled", true)) {
-            plugin.getLogger().info("[차원의 균열] 이벤트가 config.yml에서 비활성화되어 있어 시작할 수 없습니다.");
+            plugin.getLogger().info("[차원의 균열] 이벤트가 비활성화되어 있어 시작할 수 없습니다.");
             return;
         }
         if (plugin.getRiftManager().isEventActive()) {
-            plugin.getLogger().warning("[차원의 균열] An event is already active. Cannot start a new one.");
+            plugin.getLogger().warning("[차원의 균열] 이벤트가 이미 활성화 상태입니다.");
             return;
         }
 
-        plugin.getLogger().info("[차원의 균열] Triggering rift event.");
+        plugin.getLogger().info("[차원의 균열] 이벤트를 시작합니다.");
         plugin.getRiftManager().triggerEvent();
-        // The manager will now handle the ACTIVE state. The scheduler's job is done until the next cooldown.
-    }
-
-    private void startCountdown() {
-        this.currentState = State.COUNTDOWN;
-        long spawnDelayHours = plugin.getGameConfigManager().getConfig().getLong("events.rift.spawn-delay-hours", 1);
-        this.nextStateTime = System.currentTimeMillis() + TimeUnit.HOURS.toMillis(spawnDelayHours);
+        this.currentState = State.INACTIVE;
         saveState();
-        plugin.getLogger().info("[차원의 균열] Countdown started. Event will begin in " + spawnDelayHours + " hour(s).");
-        Bukkit.broadcastMessage("§d[차원의 균열] §f강력한 기운이 감지됩니다! " + spawnDelayHours + "시간 뒤 균열 제단이 나타납니다!");
     }
 
     public void startNewCooldown() {
         this.currentState = State.COOLDOWN;
-        long cooldownHours = plugin.getGameConfigManager().getConfig().getLong("events.rift.cooldown-hours", 8);
-        this.nextStateTime = System.currentTimeMillis() + TimeUnit.HOURS.toMillis(cooldownHours);
+        
+        long minHours = plugin.getGameConfigManager().getConfig().getLong("events.rift.min-cooldown-hours", 8);
+        long maxHours = plugin.getGameConfigManager().getConfig().getLong("events.rift.max-cooldown-hours", 12);
+        
+        long minMinutes = minHours * 60;
+        long maxMinutes = maxHours * 60;
+        long randomMinutes = ThreadLocalRandom.current().nextLong(minMinutes, maxMinutes + 1);
+        
+        this.nextEventTime = System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(randomMinutes);
         saveState();
-        plugin.getLogger().info("[차원의 균열] 새로운 " + cooldownHours + "시간 쿨다운이 시작되었습니다.");
+        
+        long durationHours = randomMinutes / 60;
+        long durationMinutes = randomMinutes % 60;
+        plugin.getLogger().info("[차원의 균열] 새로운 랜덤 쿨다운이 시작되었습니다. 다음 이벤트까지 약 " + durationHours + "시간 " + durationMinutes + "분 남았습니다.");
     }
 
 }

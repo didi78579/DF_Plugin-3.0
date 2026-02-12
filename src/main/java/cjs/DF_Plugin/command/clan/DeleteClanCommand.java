@@ -8,12 +8,10 @@ import org.jetbrains.annotations.NotNull;
 
 public class DeleteClanCommand {
 
-    private final DF_Main plugin;
     private final ClanManager clanManager;
     private final ClanUIManager uiManager;
 
     public DeleteClanCommand(DF_Main plugin) {
-        this.plugin = plugin;
         this.clanManager = plugin.getClanManager();
         this.uiManager = plugin.getClanManager().getUiManager();
     }

@@ -38,14 +38,17 @@ public class ClanCommand {
         String[] subArgs = Arrays.copyOfRange(args, 1, args.length);
 
         switch (action) {
-            case "create":
+            case "create" -> {
                 return createClanCommand.handle(player, subArgs);
-            case "delete":
+            }
+            case "delete" -> {
                 return deleteClanCommand.handle(player, subArgs);
+            }
             // 향후 'invite', 'leave', 'kick' 등의 명령어가 여기에 추가될 수 있습니다.
-            default:
+            default -> {
                 player.sendMessage("§c[가문] §c알 수 없는 가문 명령어입니다. 사용 가능한 명령어: create, delete");
                 return true;
+            }
         }
     }
 }

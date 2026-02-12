@@ -45,16 +45,11 @@ public class SpearProfile implements IUpgradeableProfile {
 
     @Override
     public List<String> getBaseStatsLore(ItemStack item, int level, double bonusDamage) {
-        List<String> baseLore = new ArrayList<>();
-        baseLore.add("§7주로 사용하는 손에 있을 때:");
-
-        double finalDamage = 1.0 + getBaseDamageModifier(item.getType()) + bonusDamage;
-        baseLore.add("§2 " + String.format("%.1f", finalDamage) + " 공격 피해");
-
-        final double baseAttackSpeed = getBaseAttackSpeedAttribute(item.getType());
-        double finalSpeed = 4.0 + baseAttackSpeed;
-        baseLore.add("§2 " + String.format("%.2f", finalSpeed) + " 공격 속도");
-        return baseLore;
+        List<String> lore = new ArrayList<>();
+        lore.add("§7주 손에 있을 때:");
+        lore.add(String.format(" §2%.1f 공격력", getBaseDamageModifier(item.getType()) + 1.0 + bonusDamage));
+        lore.add(String.format(" §2%.2f 공격 속도", 4.0 + getBaseAttackSpeedAttribute(item.getType())));
+        return lore;
     }
 
     @Override

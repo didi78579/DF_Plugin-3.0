@@ -1,9 +1,9 @@
 package cjs.DF_Plugin.pylon.item;
 
 import cjs.DF_Plugin.DF_Main;
+import cjs.DF_Plugin.item.CustomItemFactory;
 import cjs.DF_Plugin.pylon.clan.Clan;
 import cjs.DF_Plugin.util.PluginUtils;
-import cjs.DF_Plugin.util.item.PylonItemFactory;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -89,7 +89,7 @@ public class ReturnScrollManager {
     private void teleportToPylonArea(Player player, Clan clan) {
         List<String> pylonLocations = new ArrayList<>(clan.getPylonLocations().keySet());
         Collections.shuffle(pylonLocations);
-        Location pylonCenter = PluginUtils.deserializeLocation(pylonLocations.get(0));
+        Location pylonCenter = PluginUtils.deserializeLocation(pylonLocations.getFirst());
 
         if (pylonCenter == null) {
             player.sendMessage(PREFIX + "§c귀환 위치를 찾는데 실패했습니다. 스폰 지역으로 이동합니다.");
@@ -164,7 +164,7 @@ public class ReturnScrollManager {
                         startLocation.getBlockX() != player.getLocation().getBlockX() ||
                         startLocation.getBlockY() != player.getLocation().getBlockY() ||
                         startLocation.getBlockZ() != player.getLocation().getBlockZ() ||
-                        !PylonItemFactory.isReturnScroll(player.getInventory().getItemInMainHand())) {
+                        !CustomItemFactory.isReturnScroll(player.getInventory().getItemInMainHand())) {
 
                     cancelCasting(player, true); // 메시지와 함께 취소
                     return;
@@ -204,7 +204,7 @@ public class ReturnScrollManager {
         // 시전이 완료되었으므로, 주 손에 있는 아이템을 소모합니다.
         // 시전 중 계속 손에 들고 있었음이 보장됩니다.
         ItemStack mainHand = player.getInventory().getItemInMainHand();
-        if (PylonItemFactory.isReturnScroll(mainHand)) {
+        if (CustomItemFactory.isReturnScroll(mainHand)) {
             mainHand.setAmount(mainHand.getAmount() - 1);
         }
     }

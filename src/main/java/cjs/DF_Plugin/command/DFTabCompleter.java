@@ -9,12 +9,12 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.bukkit.util.StringUtil;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class DFTabCompleter implements TabCompleter {
 
@@ -25,7 +25,7 @@ public class DFTabCompleter implements TabCompleter {
     }
 
     @Override
-    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
         List<String> completions = new ArrayList<>();
         List<String> suggestions = new ArrayList<>();
 
@@ -89,7 +89,7 @@ public class DFTabCompleter implements TabCompleter {
         if (subArgs.length == 1) {
             suggestions.addAll(Arrays.asList(
                     "gamemode", "settings", "set", "getweapon", "clan",
-                    "register", "controlender", "unban", "game", "getitem", "statview", "rift"
+                    "register", "controlender", "unban", "game", "getitem", "statview", "rift", "underworld"
             ));
             return;
         }
@@ -108,6 +108,7 @@ public class DFTabCompleter implements TabCompleter {
             case "unban" -> handleAdminUnbanTabComplete(commandArgs, suggestions);
             case "getitem" -> handleAdminGetItemTabComplete(commandArgs, suggestions);
             case "rift" -> handleAdminRiftTabComplete(commandArgs, suggestions);
+            case "underworld" -> handleAdminUnderworldTabComplete(commandArgs, suggestions);
         }
     }
 
@@ -128,14 +129,14 @@ public class DFTabCompleter implements TabCompleter {
                 case "openchant" -> suggestions.addAll(Arrays.asList("breach", "thorns"));
                 case "bossmobstrength" -> suggestions.addAll(Arrays.asList("ender_dragon", "wither"));
             }
-        } else if (subArgs.length == 3 && "openchant".equals(subArgs[0].toLowerCase())) {
+        } else if (subArgs.length == 3 && "openchant".equalsIgnoreCase(subArgs[0])) {
             suggestions.addAll(Arrays.asList("true", "false"));
         }
     }
 
     private void handleAdminStatViewTabComplete(String[] subArgs, List<String> suggestions) {
         if (subArgs.length == 1) {
-            suggestions.addAll(Bukkit.getOnlinePlayers().stream().map(Player::getName).collect(Collectors.toList()));
+            suggestions.addAll(Bukkit.getOnlinePlayers().stream().map(Player::getName).toList());
         }
     }
 
@@ -181,7 +182,7 @@ public class DFTabCompleter implements TabCompleter {
                     Arrays.stream(Material.values())
                             .filter(m -> plugin.getUpgradeManager().getProfileRegistry().getProfile(m) != null)
                             .map(m -> m.name().toLowerCase())
-                            .collect(Collectors.toList())
+                            .toList()
             );
         } else if (subArgs.length == 2) {
             suggestions.addAll(Arrays.asList("1", "5", "10"));
@@ -196,11 +197,16 @@ public class DFTabCompleter implements TabCompleter {
             suggestions.addAll(
                     Bukkit.getOnlinePlayers().stream()
                             .map(Player::getName)
-                            .collect(Collectors.toList())
+                            .toList()
             );
         } else if (subArgs.length == 3 && "add".equalsIgnoreCase(subArgs[0])) { // add <플레이어> <클랜>
             suggestions.addAll(plugin.getClanManager().getClanNames());
         }
     }
 
+    private void handleAdminUnderworldTabComplete(String[] subArgs, List<String> suggestions) {
+        if (subArgs.length == 1) {
+            suggestions.addAll(Arrays.asList("start", "end", "status"));
+        }
+    }
 }

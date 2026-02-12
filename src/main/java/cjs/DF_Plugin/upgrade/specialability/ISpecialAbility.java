@@ -39,6 +39,18 @@ public interface ISpecialAbility {
     default void onPlayerToggleFlight(PlayerToggleFlightEvent event, Player player, ItemStack item) {}
 
     /**
+     * 작살 능력을 위해, 플레이어가 공중에서 우클릭을 유지하여 기력을 소모할 때 호출됩니다.
+     * @param player 대상 플레이어
+     * @param currentGauge 현재 기력
+     */
+    default void onHarpoonCharge(Player player, double currentGauge) {}
+    /**
+     * 작살 능력을 위해, 외부에서 급강하를 직접 실행할 때 호출됩니다.
+     * @param player 대상 플레이어
+     */
+    default void executeAerialDive(Player player) {}
+
+    /**
      * 이 능력이 기존 쿨다운을 무시하고 항상 새로 설정되어야 하는지 여부를 반환합니다.
      * @return 쿨다운을 항상 덮어써야 하면 true
      */

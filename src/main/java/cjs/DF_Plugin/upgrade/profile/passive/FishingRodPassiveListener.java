@@ -31,12 +31,12 @@ public class FishingRodPassiveListener implements Listener {
         ItemStack rod = player.getInventory().getItemInMainHand();
 
         // 주 손에 낚싯대가 없으면 보조 손을 확인
-        if (rod == null || rod.getType() != Material.FISHING_ROD) {
+        if (rod.getType() != Material.FISHING_ROD) {
             rod = player.getInventory().getItemInOffHand();
         }
 
         // 양손에 낚싯대가 없으면 종료
-        if (rod == null || rod.getType() != Material.FISHING_ROD) {
+        if (rod.getType() != Material.FISHING_ROD) {
             return;
         }
 

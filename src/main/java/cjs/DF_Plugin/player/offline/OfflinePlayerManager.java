@@ -2,11 +2,11 @@ package cjs.DF_Plugin.player.offline;
 
 import cjs.DF_Plugin.DF_Main;
 import cjs.DF_Plugin.data.InventoryDataManager;
+import cjs.DF_Plugin.item.ItemBuilder;
+import cjs.DF_Plugin.item.ItemFactory;
 import cjs.DF_Plugin.player.death.PlayerDeathManager;
 import cjs.DF_Plugin.pylon.clan.Clan;
 import cjs.DF_Plugin.pylon.clan.ClanManager;
-import cjs.DF_Plugin.util.item.ItemBuilder;
-import cjs.DF_Plugin.util.item.ItemFactory;
 import org.bukkit.*;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.ArmorStand;
@@ -26,6 +26,7 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -122,9 +123,9 @@ public class OfflinePlayerManager implements Listener {
         OfflineInventory offlineInventory = loadOfflineInventory(playerUUID);
         if (offlineInventory != null) {
             // Restore player's inventory
-            player.getInventory().setStorageContents(offlineInventory.getMain());
-            player.getInventory().setArmorContents(offlineInventory.getArmor());
-            player.getInventory().setItemInOffHand(offlineInventory.getOffHand());
+            player.getInventory().setStorageContents(offlineInventory.main());
+            player.getInventory().setArmorContents(offlineInventory.armor());
+            player.getInventory().setItemInOffHand(offlineInventory.offHand());
 
             // Delete the data after loading
             plugin.getInventoryDataManager().getInventoriesSection("player_inventory").set(playerUUID.toString(), null);
@@ -138,10 +139,11 @@ public class OfflinePlayerManager implements Listener {
         if (!(event.getRightClicked() instanceof ArmorStand armorStand)) return;
 
         PersistentDataContainer container = armorStand.getPersistentDataContainer();
-        if (!container.has(OFFLINE_BODY_KEY, PersistentDataType.STRING)) return;
+        String offlinePlayerUUIDString = container.get(OFFLINE_BODY_KEY, PersistentDataType.STRING);
+        if (offlinePlayerUUIDString == null) return;
 
         event.setCancelled(true);
-        UUID offlinePlayerUUID = UUID.fromString(container.get(OFFLINE_BODY_KEY, PersistentDataType.STRING));
+        UUID offlinePlayerUUID = UUID.fromString(offlinePlayerUUIDString);
         openOfflinePlayerGUI(event.getPlayer(), offlinePlayerUUID);
     }
 
@@ -200,7 +202,7 @@ public class OfflinePlayerManager implements Listener {
             int slot = event.getSlot();
             ItemStack cursorItem = event.getCursor();
 
-            if (cursorItem != null && cursorItem.getType() != Material.AIR) {
+            if (cursorItem.getType() != Material.AIR) {
                 if (!isPlacementAllowed(slot, cursorItem)) {
                     event.setCancelled(true);
                     if (event.getWhoClicked() instanceof Player p) {
@@ -302,10 +304,9 @@ public class OfflinePlayerManager implements Listener {
     private void removeBody(Player player) {
         for (Entity entity : player.getWorld().getEntitiesByClass(ArmorStand.class)) {
             PersistentDataContainer container = entity.getPersistentDataContainer();
-            if (container.has(OFFLINE_BODY_KEY, PersistentDataType.STRING)) {
-                if (container.get(OFFLINE_BODY_KEY, PersistentDataType.STRING).equals(player.getUniqueId().toString())) {
-                    entity.remove();
-                }
+            String offlinePlayerUUIDString = container.get(OFFLINE_BODY_KEY, PersistentDataType.STRING);
+            if (offlinePlayerUUIDString != null && offlinePlayerUUIDString.equals(player.getUniqueId().toString())) {
+                entity.remove();
             }
         }
     }

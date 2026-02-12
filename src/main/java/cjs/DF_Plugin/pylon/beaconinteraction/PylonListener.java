@@ -1,11 +1,11 @@
 package cjs.DF_Plugin.pylon.beaconinteraction;
 
 import cjs.DF_Plugin.DF_Main;
+import cjs.DF_Plugin.item.CustomItemFactory;
 import cjs.DF_Plugin.pylon.PylonType;
 import cjs.DF_Plugin.pylon.clan.Clan;
 import cjs.DF_Plugin.pylon.clan.ClanManager;
 import cjs.DF_Plugin.util.PluginUtils;
-import cjs.DF_Plugin.util.item.PylonItemFactory;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -44,8 +44,8 @@ public class PylonListener implements Listener {
             return;
         }
 
-        boolean isMainCore = PylonItemFactory.isMainCore(itemInHand);
-        boolean isAuxiliaryCore = PylonItemFactory.isAuxiliaryCore(itemInHand);
+        boolean isMainCore = CustomItemFactory.isMainPylonCore(itemInHand);
+        boolean isAuxiliaryCore = CustomItemFactory.isAuxiliaryPylonCore(itemInHand);
 
         if (!isMainCore && !isAuxiliaryCore) {
             return;
@@ -81,7 +81,7 @@ public class PylonListener implements Listener {
             }
             plugin.getPylonManager().getRegistrationManager().registerPylon(player, block, clan, PylonType.MAIN_CORE);
 
-        } else if (isAuxiliaryCore) {
+        } else {
             if (!clan.hasMainPylon()) {
                 player.sendMessage(PREFIX + "§c보조 파일런을 설치하려면 먼저 주 파일런 코어를 설치해야 합니다.");
                 event.setCancelled(true);
@@ -236,13 +236,13 @@ public class PylonListener implements Listener {
             return;
         }
         if (event.getInventory().getResult().getType() == Material.BEACON) {
-            event.getInventory().setResult(PylonItemFactory.createMainCore());
+            event.getInventory().setResult(CustomItemFactory.createMainPylonCore());
         }
     }
 
     @EventHandler
     public void onDropPylon(PlayerDropItemEvent event) {
-        if (PylonItemFactory.isMainCore(event.getItemDrop().getItemStack())) {
+        if (CustomItemFactory.isMainPylonCore(event.getItemDrop().getItemStack())) {
             event.getPlayer().sendMessage(PREFIX + "§c파일런 코어는 버릴 수 없습니다.");
             event.setCancelled(true);
         }
@@ -265,7 +265,7 @@ public class PylonListener implements Listener {
             }
         }
 
-        if (PylonItemFactory.isMainCore(movedItem)) {
+        if (CustomItemFactory.isMainPylonCore(movedItem)) {
             event.getWhoClicked().sendMessage(PREFIX + "§c파일런 코어는 파일런 창고에 보관할 수 없습니다.");
             event.setCancelled(true);
         }

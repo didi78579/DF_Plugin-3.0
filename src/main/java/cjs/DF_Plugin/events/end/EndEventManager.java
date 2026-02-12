@@ -1,7 +1,7 @@
 package cjs.DF_Plugin.events.end;
 
 import cjs.DF_Plugin.DF_Main;
-import cjs.DF_Plugin.upgrade.item.UpgradeItems;
+import cjs.DF_Plugin.item.UpgradeItems;
 import cjs.DF_Plugin.world.enchant.MagicStone;
 import org.bukkit.*;
 import org.bukkit.boss.BarColor;

@@ -1,14 +1,14 @@
 package cjs.DF_Plugin.pylon.beacongui.recruit;
 
 import cjs.DF_Plugin.DF_Main;
+import cjs.DF_Plugin.item.ItemBuilder;
+import cjs.DF_Plugin.item.ItemFactory;
 import cjs.DF_Plugin.player.stats.PlayerStats;
 import cjs.DF_Plugin.player.stats.StatType;
 import cjs.DF_Plugin.player.stats.StatsManager;
 import cjs.DF_Plugin.pylon.beacongui.BeaconGUIManager;
 import cjs.DF_Plugin.pylon.clan.Clan;
 import cjs.DF_Plugin.util.PluginUtils;
-import cjs.DF_Plugin.util.item.ItemBuilder;
-import cjs.DF_Plugin.util.item.ItemFactory;
 import org.bukkit.*;
 import org.bukkit.entity.Firework;
 import org.bukkit.entity.Player;
@@ -139,8 +139,6 @@ public class RecruitGuiManager implements Listener {
                 OfflinePlayer target = Bukkit.getOfflinePlayer(targetUUID);
                 handlePlayerSelectionClick(player, target);
             }
-        } else if (clickedItem.getType() == Material.PLAYER_HEAD && RECRUIT_GUI_TITLE_ROULETTE.equals(viewTitle)) {
-            // 룰렛 애니메이션 중의 플레이어 머리 클릭은 BeaconGUIListener에서 이미 취소되었으므로 별도 처리가 필요 없습니다.
         }
     }
 
@@ -267,7 +265,8 @@ public class RecruitGuiManager implements Listener {
         }
 
         ItemMeta meta = centerItem.getItemMeta();
-        if (!meta.getPersistentDataContainer().has(PLAYER_UUID_KEY, PersistentDataType.STRING)) {
+        String uuidString = meta.getPersistentDataContainer().get(PLAYER_UUID_KEY, PersistentDataType.STRING);
+        if (uuidString == null) {
             player.sendMessage(PREFIX + "§c팀원 선택에 오류가 발생했습니다. (데이터 오류)");
             playersInRecruitment.remove(player.getUniqueId());
             player.closeInventory();
@@ -276,7 +275,7 @@ public class RecruitGuiManager implements Listener {
 
         UUID finalRecruitUUID;
         try {
-            finalRecruitUUID = UUID.fromString(meta.getPersistentDataContainer().get(PLAYER_UUID_KEY, PersistentDataType.STRING));
+            finalRecruitUUID = UUID.fromString(uuidString);
         } catch (IllegalArgumentException e) {
             player.sendMessage(PREFIX + "§c팀원 선택에 오류가 발생했습니다. (UUID 오류)");
             playersInRecruitment.remove(player.getUniqueId());
@@ -355,18 +354,8 @@ public class RecruitGuiManager implements Listener {
      * @return 별 5개로 구성된 문자열
      */
     private String getStars(int level) {
-        StringBuilder stars = new StringBuilder();
         final int MAX_STARS = 5;
-
-        // 채워진 별 (노란색)
-        for (int i = 0; i < level; i++) {
-            stars.append("§6★");
-        }
-        // 빈 별 (회색)
-        for (int i = level; i < MAX_STARS; i++) {
-            stars.append("§7☆");
-        }
-        return stars.toString();
+        return "§6★".repeat(level) + "§7☆".repeat(MAX_STARS - level);
     }
 
     private ItemStack createPlayerHead(OfflinePlayer player, String name, String... lore) {
@@ -417,8 +406,10 @@ public class RecruitGuiManager implements Listener {
 
         if (recruitedPlayer.isOnline()) {
             Player onlineTarget = recruitedPlayer.getPlayer();
-            onlineTarget.sendMessage(PREFIX + "§a" + clan.getColor() + clan.getName() + "§a 가문에 영입되었습니다!");
-            onlineTarget.sendMessage(PREFIX + "§e다음 접속 시, 가문 파일런 근처에서 시작하게 됩니다.");
+            if (onlineTarget != null) {
+                onlineTarget.sendMessage(PREFIX + "§a" + clan.getColor() + clan.getName() + "§a 가문에 영입되었습니다!");
+                onlineTarget.sendMessage(PREFIX + "§e다음 접속 시, 가문 파일런 근처에서 시작하게 됩니다.");
+            }
         }
     }
 

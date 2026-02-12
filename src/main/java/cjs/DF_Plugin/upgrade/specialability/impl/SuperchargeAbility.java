@@ -23,14 +23,13 @@ import org.bukkit.util.Vector;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 public class SuperchargeAbility implements ISpecialAbility {
 
     private final Map<UUID, BukkitTask> chargeTasks = new HashMap<>(); // 충전 시작 -> 완료까지의 작업
     private final Map<UUID, BukkitTask> chargedStateTasks = new HashMap<>(); // 충전 완료 후 발사 대기 상태의 작업
-    private static final String CHARGED_STATE_KEY = "supercharge_charged_state"; // 플레이어 충전 완료 상태 메타데이터
+    public static final String CHARGED_STATE_KEY = "supercharge_charged_state"; // 플레이어 충전 완료 상태 메타데이터
 
     @Override
     public String getInternalName() {
@@ -49,7 +48,7 @@ public class SuperchargeAbility implements ISpecialAbility {
 
     @Override
     public double getCooldown() {
-        return DF_Main.getInstance().getGameConfigManager().getConfig().getDouble("upgrade.special-abilities.supercharge.cooldown", 5.0);
+        return DF_Main.getInstance().getGameConfigManager().getConfig().getDouble("upgrade.special-abilities.supercharge.cooldown", 1.0);
     }
 
     @Override
@@ -203,9 +202,9 @@ public class SuperchargeAbility implements ISpecialAbility {
         player.getWorld().playSound(startLoc, Sound.ENTITY_WARDEN_SONIC_BOOM, 2.0f, 1.0f);
 
         new BukkitRunnable() {
-            private final Set<UUID> hitEntities = new java.util.HashSet<>();
+            private final java.util.Set<UUID> hitEntities = new java.util.HashSet<>();
             private double distance = 0;
-            private final double maxDistance = 45; // 음파 최대 사거리
+            private final double maxDistance = 90; // 음파 최대 사거리
             private final double step = 4.5; // 틱당 이동 거리 (기존 1.5에서 3배 증가)
 
             @Override

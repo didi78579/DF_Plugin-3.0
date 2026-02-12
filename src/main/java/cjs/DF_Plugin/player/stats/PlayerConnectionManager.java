@@ -2,10 +2,10 @@ package cjs.DF_Plugin.player.stats;
 
 import cjs.DF_Plugin.DF_Main;
 import cjs.DF_Plugin.data.PlayerDataManager;
+import cjs.DF_Plugin.item.CustomItemFactory;
 import cjs.DF_Plugin.pylon.clan.Clan;
 import cjs.DF_Plugin.pylon.clan.ClanManager;
 import cjs.DF_Plugin.util.InventoryUtils;
-import cjs.DF_Plugin.util.item.PylonItemFactory;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -81,33 +81,19 @@ public class PlayerConnectionManager implements Listener {
                         player.sendMessage("§a[알림] §a게임이 시작되어 시작 지점으로 이동합니다.");
                         // 게임 시작 후 첫 접속하는 가문 대표에게 파일런 코어를 지급합니다.
                         if (playerClan.getLeader().equals(player.getUniqueId())) {
-                            InventoryUtils.giveOrDropItems(player, PylonItemFactory.createMainCore());
+                            InventoryUtils.giveOrDropItems(player, CustomItemFactory.createMainPylonCore());
                         }
                     } else {
                         player.sendMessage("§c[알림] §c가문의 시작 지점을 찾을 수 없습니다. 관리자에게 문의하세요.");
                     }
                     playerDataManager.setInitialTeleportDone(player.getUniqueId(), true);
-                } else {
-                    // 3. 이후 재접속 시, 가문의 파일런이 없으면(회수된 경우 등) 시작 지점으로 이동합니다.
-                    boolean hasPylon = playerClan.getMainPylonLocationObject().isPresent();
-                    if (!hasPylon) {
-                        Location startLoc = playerClan.getStartLocation();
-                        if (startLoc != null) {
-                            player.teleport(startLoc);
-                            player.sendMessage("§e[가문] §e소속 가문의 파일런이 없어 임시 시작 지점으로 이동되었습니다.");
-                        } else {
-                            player.sendMessage("§c[가문] §c소속 가문의 임시 시작 지점을 찾을 수 없습니다. 관리자에게 문의하세요.");
-                        }
-                    }
                     // 파일런이 있다면, 아무 행동도 하지 않고 마지막 위치에서 접속합니다.
                 }
             }
         }
 
         // 플레이어 태그 업데이트
-        if (clanManager != null) {
-            clanManager.getPlayerTagManager().updatePlayerTag(player);
-        }
+        clanManager.getPlayerTagManager().updatePlayerTag(player);
 
         // 플레이어의 스탯이 등록되어 있는지 확인하고, 없으면 기본값으로 자동 등록합니다.
         if (statsManager != null && !statsManager.hasStats(player.getUniqueId())) {
@@ -167,13 +153,13 @@ public class PlayerConnectionManager implements Listener {
         RegisteredPlayerData currentData = allPlayers.get(playerUUID);
         String playerName = Bukkit.getOfflinePlayer(playerUUID).getName();
         if (playerName == null && currentData != null) {
-            playerName = currentData.getName();
+            playerName = currentData.name();
         }
         if (playerName == null) return; // Cannot find player name.
 
         String clanName = (clan != null) ? clan.getName() : null;
 
-        if (currentData == null || !currentData.getName().equals(playerName) || !Objects.equals(currentData.getClanName(), clanName)) {
+        if (currentData == null || !currentData.name().equals(playerName) || !Objects.equals(currentData.clanName(), clanName)) {
             allPlayers.put(playerUUID, new RegisteredPlayerData(playerName, clanName));
             PlayerDataManager pdm = plugin.getPlayerDataManager();
             ConfigurationSection playerSection = pdm.getPlayerSection(playerUUID);
@@ -184,7 +170,7 @@ public class PlayerConnectionManager implements Listener {
 
     public List<UUID> getRecruitablePlayerUUIDs() {
         return allPlayers.entrySet().stream()
-                .filter(entry -> entry.getValue().getClanName() == null)
+                .filter(entry -> entry.getValue().clanName() == null)
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toList());
     }
@@ -193,16 +179,6 @@ public class PlayerConnectionManager implements Listener {
         return new ArrayList<>(allPlayers.keySet());
     }
 
-    private static class RegisteredPlayerData {
-        private final String name;
-        private final String clanName;
-
-        public RegisteredPlayerData(String name, String clanName) {
-            this.name = name;
-            this.clanName = clanName;
-        }
-
-        public String getName() { return name; }
-        public String getClanName() { return clanName; }
+    private record RegisteredPlayerData(String name, String clanName) {
     }
 }

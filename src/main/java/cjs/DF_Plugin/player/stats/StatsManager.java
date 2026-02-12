@@ -129,7 +129,7 @@ public class StatsManager implements Listener {
         this.currentEvaluators.clear();
         this.currentEvaluators.addAll(Bukkit.getOnlinePlayers().stream()
                 .map(Player::getUniqueId)
-                .collect(Collectors.toList()));
+                .toList());
 
         if (this.currentEvaluators.isEmpty()) {
             editor.sendMessage("§c[스탯 평가] §c평가에 참여할 온라인 플레이어가 없습니다.");
@@ -139,7 +139,7 @@ public class StatsManager implements Listener {
         // 2. 평가 대상 목록 생성 (기본 스탯을 가진 모든 플레이어)
         List<UUID> targets = plugin.getPlayerConnectionManager().getAllPlayerUUIDs().stream()
                 .filter(uuid -> getPlayerStats(uuid).isDefault())
-                .collect(Collectors.toList());
+                .toList();
 
         if (targets.isEmpty()) {
             editor.sendMessage("§c[스탯 평가] §c평가할 대상(기본 스탯 보유자)이 없습니다.");
@@ -164,9 +164,7 @@ public class StatsManager implements Listener {
             }
 
             MassRegistrationSession session = new MassRegistrationSession(evaluatorUUID, personalTargets);
-            if (!personalTargets.isEmpty()) {
-                session.setCurrentStats(getPlayerStats(personalTargets.get(0)).clone());
-            }
+            session.setCurrentStats(getPlayerStats(personalTargets.getFirst()).clone());
             massRegistrationSessions.put(evaluatorUUID, session);
             evaluator.sendMessage("§a[스탯 평가] §a총 " + personalTargets.size() + "명의 플레이어에 대한 전체 스탯 재평가가 시작되었습니다.");
             displayNextPlayerForRegistration(evaluator);

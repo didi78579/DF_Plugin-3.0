@@ -11,7 +11,7 @@ public class InventoryGUI {
     public static final ItemStack FILLER_PANE = createFillerPane();
 
     public static Inventory create(OfflineInventory offlineInventory) {
-        ItemMeta headMeta = offlineInventory.getPlayerHead().getItemMeta();
+        ItemMeta headMeta = offlineInventory.playerHead().getItemMeta();
         String displayName = (headMeta != null && headMeta.hasDisplayName())
                 ? headMeta.getDisplayName()
                 : "오프라인 플레이어";
@@ -23,16 +23,16 @@ public class InventoryGUI {
         }
 
         // 아이템 배치
-        gui.setItem(0, offlineInventory.getPlayerHead());
-        ItemStack[] armor = offlineInventory.getArmor();
+        gui.setItem(0, offlineInventory.playerHead());
+        ItemStack[] armor = offlineInventory.armor();
         gui.setItem(2, armor.length > 3 ? armor[3] : null); // Helmet
         gui.setItem(3, armor.length > 2 ? armor[2] : null); // Chestplate
         gui.setItem(4, armor.length > 1 ? armor[1] : null); // Leggings
         gui.setItem(5, armor.length > 0 ? armor[0] : null); // Boots
-        gui.setItem(7, offlineInventory.getOffHand());
+        gui.setItem(7, offlineInventory.offHand());
 
         // 메인 인벤토리 (핫바 포함)
-        ItemStack[] mainContents = offlineInventory.getMain();
+        ItemStack[] mainContents = offlineInventory.main();
         for (int i = 0; i < 27; i++) { // 9-35번 슬롯 -> GUI 18-44번 슬롯 (3-5번째 줄)
             gui.setItem(i + 18, mainContents[i + 9]);
         }

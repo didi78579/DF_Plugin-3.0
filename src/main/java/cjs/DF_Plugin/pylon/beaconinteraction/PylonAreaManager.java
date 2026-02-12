@@ -98,7 +98,7 @@ public class PylonAreaManager {
             }
 
             // 무시할 파일런 위치와 같다면, 이 파일런에 대한 검사는 건너뜁니다.
-            if (ignoreLocation != null && pylonLoc.equals(ignoreLocation)) {
+            if (pylonLoc.equals(ignoreLocation)) {
                 continue;
             }
 

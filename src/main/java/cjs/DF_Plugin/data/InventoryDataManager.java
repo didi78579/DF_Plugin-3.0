@@ -11,6 +11,7 @@ import org.yaml.snakeyaml.external.biz.base64Coder.Base64Coder;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.logging.Level;
 
 public class InventoryDataManager extends DataManager {
 
@@ -41,8 +42,7 @@ public class InventoryDataManager extends DataManager {
                 ItemStack[] items = fromBase64(data);
                 inventory.setContents(items);
             } catch (IOException e) {
-                plugin.getLogger().severe("[인벤토리] " + type + "/" + key + " 인벤토리를 불러올 수 없습니다.");
-                e.printStackTrace();
+                plugin.getLogger().log(Level.SEVERE, "[인벤토리] " + type + "/" + key + " 인벤토리를 불러올 수 없습니다.", e);
             }
         }
     }

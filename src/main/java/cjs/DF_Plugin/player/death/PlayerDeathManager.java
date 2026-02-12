@@ -2,6 +2,7 @@ package cjs.DF_Plugin.player.death;
 
 import cjs.DF_Plugin.DF_Main;
 import cjs.DF_Plugin.data.PlayerDataManager;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -29,8 +30,9 @@ public class PlayerDeathManager implements Listener {
     private void loadAllData() {
         PlayerDataManager pdm = plugin.getPlayerDataManager();
         FileConfiguration config = pdm.getConfig();
-        if (config.isConfigurationSection("players")) {
-            config.getConfigurationSection("players").getKeys(false).forEach(uuidString -> {
+        ConfigurationSection playersSection = config.getConfigurationSection("players");
+        if (playersSection != null) {
+            playersSection.getKeys(false).forEach(uuidString -> {
                 try {
                     UUID uuid = UUID.fromString(uuidString);
                     if (config.isSet("players." + uuidString + ".death.timestamp")) {
@@ -99,8 +101,9 @@ public class PlayerDeathManager implements Listener {
         PlayerDataManager pdm = plugin.getPlayerDataManager();
         FileConfiguration config = pdm.getConfig();
         // 기존 데이터를 지우기 위해 players 섹션을 순회하며 death 관련 데이터만 제거
-        if (config.isConfigurationSection("players")) {
-            for (String uuidStr : config.getConfigurationSection("players").getKeys(false)) {
+        ConfigurationSection playersSection = config.getConfigurationSection("players");
+        if (playersSection != null) {
+            for (String uuidStr : playersSection.getKeys(false)) {
                 config.set("players." + uuidStr + ".death", null);
             }
         }

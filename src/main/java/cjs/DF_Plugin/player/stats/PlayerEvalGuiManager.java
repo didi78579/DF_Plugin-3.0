@@ -1,8 +1,8 @@
 package cjs.DF_Plugin.player.stats;
 
 import cjs.DF_Plugin.DF_Main;
-import cjs.DF_Plugin.util.item.ItemBuilder;
-import cjs.DF_Plugin.util.item.ItemFactory;
+import cjs.DF_Plugin.item.ItemBuilder;
+import cjs.DF_Plugin.item.ItemFactory;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
@@ -63,17 +63,7 @@ public class PlayerEvalGuiManager {
      * @return 별 5개로 구성된 문자열
      */
     private String getStars(int level) {
-        StringBuilder stars = new StringBuilder();
         final int MAX_STARS = 5;
-
-        // 채워진 별 (노란색)
-        for (int i = 0; i < level; i++) {
-            stars.append("§6★");
-        }
-        // 빈 별 (회색)
-        for (int i = level; i < MAX_STARS; i++) {
-            stars.append("§7☆");
-        }
-        return stars.toString();
+        return "§6★".repeat(level) + "§7☆".repeat(MAX_STARS - level);
     }
 }

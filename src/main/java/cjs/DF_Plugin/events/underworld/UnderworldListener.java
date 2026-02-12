@@ -1,22 +1,35 @@
-package cjs.DF_Plugin.event.underworld;
+package cjs.DF_Plugin.events.underworld;
 
-import cjs.DF_Plugin.event.item.CustomItems;
+import cjs.DF_Plugin.DF_Main;
+import cjs.DF_Plugin.item.CustomItemFactory;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.boss.BossBar;
+import org.bukkit.boss.KeyedBossBar;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Wither;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.CreatureSpawnEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
-import org.bukkit.inventory.ItemStack;
+
+import java.util.Iterator;
+import java.util.List;
+import java.util.Random;
 
 public class UnderworldListener implements Listener {
 
     private final UnderworldEventManager manager = UnderworldEventManager.getInstance();
+    private final Random random = new Random();
+    private static final List<EntityType> ALLOWED_SPAWNS = List.of(EntityType.BLAZE, EntityType.PIGLIN_BRUTE, EntityType.WITHER_SKELETON);
 
     @EventHandler
     public void onPlayerPortal(PlayerPortalEvent event) {
@@ -24,61 +37,113 @@ public class UnderworldListener implements Listener {
 
         Player player = event.getPlayer();
         if (event.getTo().getWorld().getEnvironment() == World.Environment.NETHER) {
-            if (manager.hasEntered(player)) {
-                player.sendMessage("§c이미 마계에 입장한 기록이 있어 더 이상 들어갈 수 없습니다.");
-                event.setCancelled(true);
-                return;
+            event.setCancelled(true);
+
+            Iterator<KeyedBossBar> bossBarIterator = Bukkit.getBossBars();
+            while (bossBarIterator.hasNext()) {
+                BossBar bossBar = bossBarIterator.next();
+                if (bossBar.getPlayers().contains(player)) {
+                    bossBar.removePlayer(player);
+                }
             }
 
-            event.setCancelled(true); // 기본 포탈 이동 취소
-            Location underworldSpawn = manager.getUnderworld().getSpawnLocation();
-            player.teleport(underworldSpawn);
+            if (!manager.hasPlayersEntered()) {
+                manager.spawnBoss();
+            }
+            manager.addEnteredPlayer(player);
+
+            World underworld = manager.getUnderworld();
+            Location randomLoc = findRandomSafeLocation(underworld);
+            
+            event.setTo(randomLoc);
+            event.setCanCreatePortal(true);
+
+            player.teleport(randomLoc);
             player.sendMessage("§5마계의 기운에 이끌려 미지의 공간으로 빨려 들어갑니다...");
-            manager.addPlayer(player);
+        }
+    }
+
+    @EventHandler
+    public void onCreatureSpawn(CreatureSpawnEvent event) {
+        if (event.getLocation().getWorld() != manager.getUnderworld()) return;
+
+        if (event.getEntityType() == EntityType.WITHER && event.getSpawnReason() == CreatureSpawnEvent.SpawnReason.CUSTOM) {
+            return;
+        }
+
+        if (event.getSpawnReason() != CreatureSpawnEvent.SpawnReason.NATURAL || !ALLOWED_SPAWNS.contains(event.getEntityType())) {
+            event.setCancelled(true);
         }
     }
 
     @EventHandler
     public void onPlayerDeathInUnderworld(PlayerDeathEvent event) {
-        if (!manager.isEventActive()) return;
+        if (event.getPlayer().getWorld() != manager.getUnderworld()) return;
 
-        Player victim = event.getEntity();
-        if (victim.getWorld() != manager.getUnderworld()) return;
-
+        Player victim = event.getPlayer();
         Player killer = victim.getKiller();
         if (killer != null && !killer.equals(victim)) {
-            killer.getInventory().addItem(CustomItems.DEMON_SOUL.getItem());
+            killer.getInventory().addItem(CustomItemFactory.createDemonSoul());
             killer.sendMessage("§c다른 플레이어를 처치하여 §4악마의 영혼§c을 1개 획득했습니다.");
         }
     }
 
     @EventHandler
     public void onBossDeath(EntityDeathEvent event) {
-        if (!manager.isEventActive()) return;
-
-        if (event.getEntity() == manager.getBoss()) {
-            // 보상 지급
-            event.getDrops().clear(); // 기본 드랍템 제거
-            event.getDrops().add(CustomItems.AUXILIARY_PYLON_CORE.getItem());
-
-            // 이벤트 종료
+        if (manager.getBoss() != null && event.getEntity().equals(manager.getBoss())) {
+            event.getDrops().clear();
+            event.getDrops().add(CustomItemFactory.createAuxiliaryPylonCore());
             manager.endEvent("마계의 주인이 처치되어");
         }
     }
 
-    @EventHandler
-    public void onWitherSpawn(CreatureSpawnEvent event) {
-        if (event.getEntityType() == EntityType.WITHER &&
-            event.getSpawnReason() == CreatureSpawnEvent.SpawnReason.BUILD_WITHER) {
-            
-            // 이벤트 기간 중에는 플레이어가 위더를 소환할 수 없음
-            if (manager.isEventActive()) {
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onBossDamage(EntityDamageByEntityEvent event) {
+        if (!manager.isEventActive() || manager.getBoss() == null || manager.getBoss().isDead()) {
+            return;
+        }
+
+        Entity damaged = event.getEntity();
+        Entity damager = event.getDamager();
+
+        if (damager instanceof Player attacker && attacker.hasMetadata("df_is_riptiding")) {
+            if (damaged.equals(manager.getBoss()) || manager.getHitboxEntities().contains(damaged)) {
                 event.setCancelled(true);
-                // 주변 플레이어에게 알림
-                event.getLocation().getNearbyPlayers(30).forEach(p ->
-                    p.sendMessage("§c불길한 기운이 당신의 소환 의식을 방해합니다. 지금은 위더를 소환할 수 없습니다.")
-                );
+                return;
             }
         }
+
+        if (manager.getHitboxEntities().contains(damaged)) {
+            event.setCancelled(true);
+            manager.getBoss().damage(event.getDamage() / 10.0, damager);
+            return;
+        }
+        
+        if (damaged.equals(manager.getBoss())) {
+            event.setDamage(event.getDamage() / 10.0);
+        }
+    }
+
+    private Location findRandomSafeLocation(World world) {
+        int attempts = 0;
+        while (attempts < 100) {
+            int x = random.nextInt(400) - 200;
+            int z = random.nextInt(400) - 200;
+
+            if (Math.abs(x) < 50 && Math.abs(z) < 50) {
+                attempts++;
+                continue;
+            }
+
+            int y = world.getHighestBlockYAt(x, z);
+            if (y > 5 && y < 120) {
+                Location loc = new Location(world, x, y + 1, z);
+                if (loc.getBlock().isPassable() && loc.clone().add(0, 1, 0).getBlock().isPassable()) {
+                    return loc;
+                }
+            }
+            attempts++;
+        }
+        return new Location(world, 150, 100, 150);
     }
 }

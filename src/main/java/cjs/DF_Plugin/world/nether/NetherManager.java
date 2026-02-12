@@ -1,6 +1,7 @@
 package cjs.DF_Plugin.world.nether;
 
 import cjs.DF_Plugin.DF_Main;
+import cjs.DF_Plugin.events.underworld.UnderworldEventManager;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffectType;
@@ -19,8 +20,15 @@ public class NetherManager {
         new BukkitRunnable() {
             @Override
             public void run() {
+                UnderworldEventManager underworldManager = UnderworldEventManager.getInstance();
+
                 for (Player player : plugin.getServer().getOnlinePlayers()) {
-                    if (player.getWorld().getEnvironment() != World.Environment.NETHER) {
+                    World playerWorld = player.getWorld();
+                    if (playerWorld.getEnvironment() != World.Environment.NETHER){
+                        continue;
+                    }
+                    // '마계의 주인' 이벤트 월드에서는 화염 피해를 적용하지 않음
+                    if (underworldManager.isEventActive() && playerWorld.equals(underworldManager.getUnderworld())) {
                         continue;
                     }
 

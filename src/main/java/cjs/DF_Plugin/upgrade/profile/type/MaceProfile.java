@@ -16,6 +16,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -50,21 +51,16 @@ public class MaceProfile implements IUpgradeableProfile {
 
     @Override
     public List<String> getBaseStatsLore(ItemStack item, int level, double bonusDamage) {
-        List<String> baseLore = new ArrayList<>();
-        baseLore.add("§7주로 사용하는 손에 있을 때:");
-
-        double finalDamage = 6.0 + bonusDamage;
-        baseLore.add("§2 " + String.format("%.1f", finalDamage) + " 공격 피해");
-        baseLore.add("§2 0.60 공격 속도");
-        return baseLore;
+        List<String> lore = new ArrayList<>();
+        lore.add("§7주 손에 있을 때:");
+        lore.add(String.format(" §2%.1f 공격력", 7.0 + bonusDamage));
+        lore.add(" §20.60 공격 속도");
+        return lore;
     }
 
     @Override
     public List<String> getPassiveBonusLore(ItemStack item, int level) {
-        List<String> lore = new ArrayList<>();
-        lore.add("§c강화 실패 시 파괴되지 않고 0강으로 초기화됩니다.");
-
-        return lore;
+        return Collections.emptyList();
     }
 
     @Override

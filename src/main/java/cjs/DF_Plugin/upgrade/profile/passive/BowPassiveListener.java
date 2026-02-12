@@ -60,7 +60,7 @@ public class BowPassiveListener implements Listener {
         }
 
         // --- 기본 패시브 (체력 비례 데미지) ---
-        int level = arrow.getMetadata(BOW_PASSIVE_LEVEL_KEY).get(0).asInt();
+        int level = arrow.getMetadata(BOW_PASSIVE_LEVEL_KEY).getFirst().asInt();
         if (level <= 0) return;
 
         double percentPerLevel = plugin.getGameConfigManager().getConfig().getDouble("upgrade.generic-bonuses.bow.passive-current-health-damage-percent-per-level", 1.5) / 100.0;
@@ -85,7 +85,7 @@ public class BowPassiveListener implements Listener {
                 // 참고: damage() 메서드는 방어력과 인챈트의 영향을 받으므로,
                 // 고정 피해를 주기 위해 setHealth()를 사용하고 피격 효과를 수동으로 재생합니다.
                 target.setHealth(Math.max(0, target.getHealth() - additionalDamage));
-                target.playEffect(org.bukkit.EntityEffect.HURT);
+                target.playHurtAnimation(0);
             }
         }.runTaskLater(plugin, 1L);
     }

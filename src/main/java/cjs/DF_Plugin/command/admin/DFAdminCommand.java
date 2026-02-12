@@ -3,18 +3,20 @@ package cjs.DF_Plugin.command.admin;
 import cjs.DF_Plugin.DF_Main;
 import cjs.DF_Plugin.events.game.settings.GameConfigManager;
 import cjs.DF_Plugin.events.game.settings.GameModeManager;
+import cjs.DF_Plugin.events.underworld.UnderworldEventManager;
+import cjs.DF_Plugin.item.CustomItemFactory;
+import cjs.DF_Plugin.item.MasterCompass;
 import cjs.DF_Plugin.player.stats.PlayerEvalGuiManager;
 import cjs.DF_Plugin.player.stats.StatType;
 import cjs.DF_Plugin.player.stats.StatsManager;
 import cjs.DF_Plugin.upgrade.UpgradeManager;
-import cjs.DF_Plugin.upgrade.item.UpgradeItems;
+import cjs.DF_Plugin.item.UpgradeItems;
 import cjs.DF_Plugin.upgrade.profile.IUpgradeableProfile;
-import cjs.DF_Plugin.util.item.PylonItemFactory;
 import cjs.DF_Plugin.world.enchant.MagicStone;
-import cjs.DF_Plugin.world.item.MasterCompass;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -48,7 +50,7 @@ public class DFAdminCommand implements CommandExecutor {
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (args.length == 0) {
             sender.sendMessage("§c[DF 관리] 사용법: /df admin <subcommand>");
-            sender.sendMessage("§c[DF 관리] 사용 가능한 명령어: gamemode, settings, set, clan, register, controlender, unban, game, getitem, getweapon, statview, rift");
+            sender.sendMessage("§c[DF 관리] 사용 가능한 명령어: gamemode, settings, set, clan, register, controlender, unban, game, getitem, getweapon, statview, rift, underworld");
 
             return true;
         }
@@ -71,6 +73,7 @@ public class DFAdminCommand implements CommandExecutor {
             case "getweapon" -> handleGetWeaponCommand(sender, subArgs);
             case "statview" -> handleStatViewCommand(sender, subArgs);
             case "rift" -> handleAdminRiftCommand(sender, subArgs);
+            case "underworld" -> handleUnderworldCommand(sender, subArgs);
             default -> sender.sendMessage("§c[DF 관리] 알 수 없는 명령어입니다.");
         }
 
@@ -310,12 +313,8 @@ public class DFAdminCommand implements CommandExecutor {
 
         String action = args[0].toLowerCase();
         switch (action) {
-            case "start" -> {
-                plugin.getGameStartManager().startGame();
-            }
-            case "stop" -> {
-                plugin.getGameStartManager().stopGame();
-            }
+            case "start" -> plugin.getGameStartManager().startGame();
+            case "stop" -> plugin.getGameStartManager().stopGame();
             default -> sender.sendMessage("§c[DF 관리] 알 수 없는 명령어입니다. 사용법: /df admin game <start|stop>");
         }
     }
@@ -346,11 +345,11 @@ public class DFAdminCommand implements CommandExecutor {
         ItemStack itemToGive;
         switch (itemName) {
             case "main_core":
-                itemToGive = PylonItemFactory.createMainCore();
+                itemToGive = CustomItemFactory.createMainPylonCore();
                 itemToGive.setAmount(amount);
                 break;
             case "aux_core":
-                itemToGive = PylonItemFactory.createAuxiliaryCore();
+                itemToGive = CustomItemFactory.createAuxiliaryPylonCore();
                 itemToGive.setAmount(amount);
                 break;
             case "master_compass":
@@ -363,7 +362,7 @@ public class DFAdminCommand implements CommandExecutor {
                 itemToGive = MagicStone.createMagicStone(amount);
                 break;
             case "return_scroll":
-                itemToGive = PylonItemFactory.createReturnScroll();
+                itemToGive = CustomItemFactory.createReturnScroll();
                 itemToGive.setAmount(amount);
                 break;
             default:
@@ -427,6 +426,48 @@ public class DFAdminCommand implements CommandExecutor {
                 sender.sendMessage("§e[DF 관리] §7현재 진행 중: " + (isActive ? "§a예" : "§c아니오"));
             }
             default -> sender.sendMessage("§c[DF 관리] 알 수 없는 명령어입니다. 사용법: /df admin rift <start|toggle|status>");
+        }
+    }
+
+    private void handleUnderworldCommand(CommandSender sender, String[] args) {
+        if (args.length == 0) {
+            sender.sendMessage("§c[DF 관리] 사용법: /df admin underworld <start|end|status>");
+            return;
+        }
+
+        String action = args[0].toLowerCase();
+        UnderworldEventManager manager = UnderworldEventManager.getInstance();
+
+        switch (action) {
+            case "start" -> {
+                if (manager.isEventActive()) {
+                    sender.sendMessage("§c[DF 관리] 마계의 주인 이벤트가 이미 진행 중입니다.");
+                    return;
+                }
+                manager.startEvent();
+                sender.sendMessage("§a[DF 관리] 마계의 주인 이벤트를 시작했습니다!");
+            }
+            case "end" -> {
+                if (!manager.isEventActive()) {
+                    sender.sendMessage("§c[DF 관리] 마계의 주인 이벤트가 진행 중이 아닙니다.");
+                    return;
+                }
+                manager.endEvent("관리자 명령으로");
+                sender.sendMessage("§a[DF 관리] 마계의 주인 이벤트를 종료했습니다!");
+            }
+            case "status" -> {
+                if (manager.isEventActive()) {
+                    sender.sendMessage("§a[DF 관리] 마계의 주인 이벤트가 진행 중입니다.");
+                    if (manager.getBoss() != null && !manager.getBoss().isDead()) {
+                        sender.sendMessage(String.format("§a[DF 관리] 보스 체력: %.0f/%.0f", manager.getBoss().getHealth(), manager.getBoss().getAttribute(Attribute.MAX_HEALTH).getValue()));
+                    } else {
+                        sender.sendMessage("§e[DF 관리] 보스가 소환되지 않았거나 이미 처치되었습니다.");
+                    }
+                } else {
+                    sender.sendMessage("§c[DF 관리] 마계의 주인 이벤트가 진행 중이 아닙니다.");
+                }
+            }
+            default -> sender.sendMessage("§c[DF 관리] 알 수 없는 명령어입니다. 사용법: /df admin underworld <start|end|status>");
         }
     }
 }

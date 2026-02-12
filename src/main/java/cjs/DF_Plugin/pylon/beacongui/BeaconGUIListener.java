@@ -163,7 +163,7 @@ public class BeaconGUIListener implements Listener {
             guiManager.getRecruitGuiManager().handleGuiClick(event);
         } else if (isResurrectGUI) {
             guiManager.getResurrectGuiManager().handleGuiClick(event);
-        } else if (isShopGUI) {
+        } else {
             guiManager.getShopManager().handleGuiClick(event);
         }
     }

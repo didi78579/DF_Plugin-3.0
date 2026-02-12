@@ -22,7 +22,6 @@ import java.util.Set;
 
 public class UpgradeListener implements Listener {
 
-    private final DF_Main plugin;
     private final UpgradeManager upgradeManager;
     private final UpgradeGUI upgradeGUI;
     private static final String PREFIX = "§6[강화] §f";
@@ -34,9 +33,8 @@ public class UpgradeListener implements Listener {
     );
 
     public UpgradeListener(DF_Main plugin) {
-        this.plugin = plugin;
         this.upgradeManager = plugin.getUpgradeManager();
-        this.upgradeGUI = new UpgradeGUI(plugin);
+        this.upgradeGUI = new UpgradeGUI();
     }
 
     @EventHandler
@@ -65,13 +63,12 @@ public class UpgradeListener implements Listener {
 
         // GUI 내부 클릭만 처리
         if (slot < topInventory.getSize()) {
-            switch (slot) {
-                case UpgradeGUI.UPGRADE_ITEM_SLOT -> {
-                    if (event.isLeftClick()) {
-                        handleUpgrade(player, topInventory);
-                    } else if (event.isRightClick()) {
-                        handleWithdraw(player, topInventory);
-                    }
+            // [가독성 개선] switch문 대신 if문으로 변경하여 코드를 간소화합니다.
+            if (slot == UpgradeGUI.UPGRADE_ITEM_SLOT) {
+                if (event.isLeftClick()) {
+                    handleUpgrade(player, topInventory);
+                } else if (event.isRightClick()) {
+                    handleWithdraw(player, topInventory);
                 }
             }
         }
@@ -129,13 +126,14 @@ public class UpgradeListener implements Listener {
 
         final ItemStack itemInSlot = inventory.getItem(UpgradeGUI.UPGRADE_ITEM_SLOT);
 
-        // [개선] 아이템을 교체하는 로직
+        // [로직 개선] 아이템을 교체하는 로직을 더 명확하게 수정합니다.
         inventory.setItem(UpgradeGUI.UPGRADE_ITEM_SLOT, clickedItem.clone());
-        event.setCurrentItem(null); // 플레이어 인벤토리에서 아이템 제거
 
         // 기존에 있던 아이템이 플레이스홀더가 아니었다면 플레이어 인벤토리로 돌려줍니다.
         if (itemInSlot != null && !itemInSlot.isSimilar(UpgradeGUI.createAnvilPlaceholder())) {
-            giveOrDropItems(player, itemInSlot);
+            player.getInventory().setItem(event.getSlot(), itemInSlot);
+        } else {
+            event.setCurrentItem(null); // 기존 슬롯이 비어있었다면, 클릭한 아이템을 제거합니다.
         }
 
         player.playSound(player.getLocation(), Sound.UI_STONECUTTER_TAKE_RESULT, 0.7f, 1.5f);

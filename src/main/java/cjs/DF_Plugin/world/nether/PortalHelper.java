@@ -68,9 +68,21 @@ public class PortalHelper {
             for (int i = -r; i <= r; i++) {
                 for (int j = -r; j <= r; j++) {
                     if (Math.abs(i) != r && Math.abs(j) != r) continue; // 가장자리만 탐색
+                    
+                    int currentX = startX + i;
+                    int currentZ = startZ + j;
 
-                    Location checkBaseLoc = world.getHighestBlockAt(startX + i, startZ + j).getLocation();
-                    Location checkPortalLoc = checkBaseLoc.clone().add(0, 1, 0); // 포탈은 가장 높은 블록 위에 생성
+                    Location checkPortalLoc;
+                    if (world.getEnvironment() == World.Environment.NETHER) {
+                        // 네더에서는 Y 32~100 사이의 안전한 공간을 탐색합니다.
+                        checkPortalLoc = findSafeYInNether(world, currentX, currentZ);
+                    } else {
+                        // 오버월드에서는 가장 높은 블록 위에 생성합니다.
+                        Location checkBaseLoc = world.getHighestBlockAt(currentX, currentZ).getLocation();
+                        checkPortalLoc = checkBaseLoc.clone().add(0, 1, 0);
+                    }
+
+                    if (checkPortalLoc == null) continue; // 네더에서 안전한 Y좌표를 못 찾으면 건너뜁니다.
 
                     Axis safeAxis = getSafeOrientation(checkPortalLoc);
                     if (safeAxis != null) {
@@ -82,6 +94,27 @@ public class PortalHelper {
         // 안전한 위치를 못 찾으면 원래 위치 위에 X축 방향으로 생성 시도
         Location fallbackLoc = center.getWorld().getHighestBlockAt(center).getLocation().add(0, 1, 0);
         return new SafePortalPlacement(fallbackLoc, Axis.X);
+    }
+
+    /**
+     * 네더 월드에서 포탈을 생성할 안전한 Y좌표를 찾습니다.
+     * @param world 네더 월드
+     * @param x X 좌표
+     * @param z Z 좌표
+     * @return 안전한 위치, 없으면 null
+     */
+    private static Location findSafeYInNether(World world, int x, int z) {
+        for (int y = 32; y < 100; y++) {
+            Block floor = world.getBlockAt(x, y, z);
+            Block space1 = world.getBlockAt(x, y + 1, z);
+            Block space2 = world.getBlockAt(x, y + 2, z);
+
+            // 바닥은 단단하고, 그 위 2칸은 비어있는 공간을 찾습니다.
+            if (floor.getType().isSolid() && !space1.getType().isSolid() && !space2.getType().isSolid()) {
+                return space1.getLocation();
+            }
+        }
+        return null; // 안전한 위치를 찾지 못함
     }
 
     /**

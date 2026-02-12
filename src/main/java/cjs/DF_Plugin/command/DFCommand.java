@@ -37,25 +37,28 @@ public class DFCommand implements CommandExecutor {
 
         switch (subCommand) {
             // --- 일반 플레이어 명령어 ---
-            case "clan":
+            case "clan" -> {
                 if (!(sender instanceof Player)) {
                     sender.sendMessage("§c[DF] §c플레이어만 사용할 수 있는 명령어입니다.");
                     return true;
                 }
                 return clanCommand.handle((Player) sender, subArgs);
+            }
 
             // --- 관리자 전용 명령어 ---
-            case "admin":
+            case "admin" -> {
                 if (!sender.hasPermission("df.admin")) {
                     sender.sendMessage("§c[DF] §c이 명령어를 사용할 권한이 없습니다.");
                     return true;
                 }
                 // DFAdminCommand는 이제 admin 하위 명령어들을 처리합니다.
                 return adminCommand.onCommand(sender, command, label, subArgs);
+            }
 
-            default:
+            default -> {
                 sender.sendMessage("§c[DF] §c알 수 없는 명령어입니다. 도움말을 보려면 /df 를 입력하세요.");
                 return true;
+            }
         }
     }
 }

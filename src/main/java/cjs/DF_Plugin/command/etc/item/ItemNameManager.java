@@ -5,6 +5,7 @@ import cjs.DF_Plugin.upgrade.UpgradeManager;
 import cjs.DF_Plugin.upgrade.profile.IUpgradeableProfile;
 import cjs.DF_Plugin.upgrade.profile.ProfileRegistry;
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -40,7 +41,7 @@ public class ItemNameManager {
         }
 
         NameChangeSession session = sessions.computeIfAbsent(player.getUniqueId(), k -> new NameChangeSession(item));
-        session.updateFromItem(item); // 매번 열 때마다 아이템의 현재 상태를 반영
+        session.updateFromItem(item);
         uiManager.openNameChangeUI(player, session);
     }
 
@@ -88,15 +89,17 @@ public class ItemNameManager {
 
         meta.getPersistentDataContainer().set(CUSTOM_NAME_KEY, PersistentDataType.STRING, session.getName());
         meta.getPersistentDataContainer().set(CUSTOM_COLOR_KEY, PersistentDataType.STRING, String.valueOf(session.getColor().getChar()));
-        item.setItemMeta(meta);
-
-        // 변경된 이름/색상을 적용하고 아이템 로어를 새로고침합니다.
+        
         UpgradeManager upgradeManager = plugin.getUpgradeManager();
-        ProfileRegistry profileRegistry = upgradeManager.getProfileRegistry();
-        IUpgradeableProfile profile = profileRegistry.getProfile(item.getType());
+        IUpgradeableProfile profile = upgradeManager.getProfileRegistry().getProfile(item.getType());
+        
         if (profile != null) {
             int currentLevel = upgradeManager.getUpgradeLevel(item);
+            item.setItemMeta(meta);
             upgradeManager.setUpgradeLevel(item, currentLevel);
+        } else {
+            meta.setDisplayName(session.getColor() + session.getName());
+            item.setItemMeta(meta);
         }
 
         player.sendMessage("§a[아이템] §a아이템 이름과 색상이 성공적으로 적용되었습니다.");
@@ -104,7 +107,7 @@ public class ItemNameManager {
     }
 
     public void resetName(Player player) {
-        sessions.remove(player.getUniqueId()); // 세션 종료
+        sessions.remove(player.getUniqueId());
 
         ItemStack item = player.getInventory().getItemInMainHand();
         if (item.getType().isAir()) {
@@ -117,15 +120,17 @@ public class ItemNameManager {
 
         meta.getPersistentDataContainer().remove(CUSTOM_NAME_KEY);
         meta.getPersistentDataContainer().remove(CUSTOM_COLOR_KEY);
-        item.setItemMeta(meta);
-
-        // 이름/색상 초기화 후 아이템 로어를 새로고침합니다.
+        
         UpgradeManager upgradeManager = plugin.getUpgradeManager();
-        ProfileRegistry profileRegistry = upgradeManager.getProfileRegistry();
-        IUpgradeableProfile profile = profileRegistry.getProfile(item.getType());
+        IUpgradeableProfile profile = upgradeManager.getProfileRegistry().getProfile(item.getType());
+
         if (profile != null) {
             int currentLevel = upgradeManager.getUpgradeLevel(item);
+            item.setItemMeta(meta);
             upgradeManager.setUpgradeLevel(item, currentLevel);
+        } else {
+            meta.setDisplayName(null);
+            item.setItemMeta(meta);
         }
 
         player.sendMessage("§a[아이템] §a아이템의 이름과 색상을 초기화했습니다.");
@@ -158,7 +163,7 @@ public class ItemNameManager {
             String colorChar = meta.getPersistentDataContainer().get(CUSTOM_COLOR_KEY, PersistentDataType.STRING);
             this.color = (colorChar != null) ? ChatColor.getByChar(colorChar.charAt(0)) : ChatColor.GOLD;
             this.colorIndex = availableColors.indexOf(this.color);
-            if (this.colorIndex == -1) this.colorIndex = 0; // Fallback
+            if (this.colorIndex == -1) this.colorIndex = 0;
         }
 
         public String getName() { return name; }

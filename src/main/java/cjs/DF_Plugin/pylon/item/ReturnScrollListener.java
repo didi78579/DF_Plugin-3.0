@@ -1,6 +1,6 @@
 package cjs.DF_Plugin.pylon.item;
 
-import cjs.DF_Plugin.util.item.PylonItemFactory;
+import cjs.DF_Plugin.item.CustomItemFactory;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -27,7 +27,7 @@ public class ReturnScrollListener implements Listener {
             ItemStack itemInHand = player.getInventory().getItemInMainHand();
 
             // 주 손에 들고 있는 아이템이 귀환 주문서인지 확인합니다.
-            if (PylonItemFactory.isReturnScroll(itemInHand)) {
+            if (CustomItemFactory.isReturnScroll(itemInHand)) {
                 event.setCancelled(true); // 블록 설치 등 기본 동작을 막습니다.
 
                 // 이미 시전 중이면 중복 실행을 막습니다.

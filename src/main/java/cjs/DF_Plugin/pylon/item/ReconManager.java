@@ -92,7 +92,7 @@ public class ReconManager implements Listener {
     @EventHandler
     public void onPlayerJump(PlayerJumpEvent event) {
         Player player = event.getPlayer();
-        if (!reconPlayers.containsKey(player.getUniqueId()) || reconPlayers.get(player.getUniqueId()) != ReconState.READY_TO_LAUNCH) {
+        if (reconPlayers.get(player.getUniqueId()) != ReconState.READY_TO_LAUNCH) {
             return;
         }
 

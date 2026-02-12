@@ -222,7 +222,11 @@ events:
     break-duration-seconds: 8
     # 알 파괴 후 제단이 사라지기까지의 시간 (분)
     cleanup-delay-minutes: 1
+# config.yml
 
+  underworld:
+    # MythicMobs에 설정된 보스의 내부 이름(Internal Name)을 입력하세요.
+    boss-name: "MakaeMaster"
 # ==================================================================
 # 엔드 이벤트 (End Event)
 # ==================================================================

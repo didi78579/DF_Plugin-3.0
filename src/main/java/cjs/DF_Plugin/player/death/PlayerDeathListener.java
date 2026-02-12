@@ -1,7 +1,10 @@
 package cjs.DF_Plugin.player.death;
 
-import org.bukkit.GameRule;
+import net.kyori.adventure.text.Component;
+import org.bukkit.*;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Firework;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -9,6 +12,10 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.inventory.meta.FireworkMeta;
+import org.bukkit.metadata.MetadataValue;
+
+import java.util.List;
 
 public class PlayerDeathListener implements Listener {
 
@@ -16,6 +23,33 @@ public class PlayerDeathListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerDeath(PlayerDeathEvent event) {
         Player player = event.getEntity();
+        Player killer = player.getKiller();
+
+        // --- 사망 메시지 수정 로직 ---
+        if (killer != null && killer.hasMetadata("df_skill_weapon")) {
+            List<MetadataValue> values = killer.getMetadata("df_skill_weapon");
+            if (!values.isEmpty() && values.get(0).value() instanceof ItemStack) {
+                ItemStack skillWeapon = (ItemStack) values.get(0).value();
+
+                // 새로운 사망 메시지 생성
+                Component deathMessage = Component.text()
+                        .append(player.displayName())
+                        .append(Component.text(" was slain by "))
+                        .append(killer.displayName())
+                        .append(Component.text(" using "))
+                        .append(skillWeapon.displayName().hoverEvent(skillWeapon.asHoverEvent()))
+                        .build();
+
+                event.deathMessage(deathMessage);
+            }
+        }
+        // --- (수정 끝) ---
+
+        // 킬러가 다른 플레이어인 경우 킬 이펙트 생성
+        if (killer != null && !killer.equals(player)) {
+            spawnKillFirework(player.getLocation());
+        }
+
         Boolean keepInventory = player.getWorld().getGameRuleValue(GameRule.KEEP_INVENTORY);
 
         // keepInventory가 true일 때만 소실 저주를 수동으로 처리
@@ -43,9 +77,24 @@ public class PlayerDeathListener implements Listener {
 
             // 3. 왼손(오프핸드) 슬롯 확인
             ItemStack offHandItem = inventory.getItemInOffHand();
-            if (offHandItem != null && offHandItem.hasItemMeta() && offHandItem.getEnchantments().containsKey(Enchantment.VANISHING_CURSE)) {
+            if (offHandItem.hasItemMeta() && offHandItem.getEnchantments().containsKey(Enchantment.VANISHING_CURSE)) {
                 inventory.setItemInOffHand(null);
             }
         }
+    }
+
+    private void spawnKillFirework(Location location) {
+        Firework fw = (Firework) location.getWorld().spawnEntity(location, EntityType.FIREWORK_ROCKET);
+        FireworkMeta fwm = fw.getFireworkMeta();
+
+        fwm.setPower(1);
+        fwm.addEffect(FireworkEffect.builder()
+                .with(FireworkEffect.Type.STAR)
+                .withColor(Color.PURPLE)
+                .withFlicker()
+                .build());
+
+        fw.setFireworkMeta(fwm);
+        fw.detonate();
     }
 }

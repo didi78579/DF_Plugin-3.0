@@ -6,7 +6,7 @@ import cjs.DF_Plugin.data.ClanDataManager;
 import cjs.DF_Plugin.data.InventoryDataManager;
 import cjs.DF_Plugin.events.rift.RiftManager;
 import cjs.DF_Plugin.pylon.PylonType;
-import cjs.DF_Plugin.upgrade.item.UpgradeItems;
+import cjs.DF_Plugin.item.UpgradeItems;
 import cjs.DF_Plugin.util.PlayerTagManager;
 import cjs.DF_Plugin.util.PluginUtils;
 import cjs.DF_Plugin.world.enchant.MagicStone;
@@ -93,7 +93,13 @@ public class ClanManager {
             ConfigurationSection clanSection = clansSection.getConfigurationSection(clanName);
             if (clanSection == null) continue;
 
-            Clan clan = new Clan(clanName, UUID.fromString(clanSection.getString("leader")), ChatColor.valueOf(clanSection.getString("color", "WHITE")));
+            String leaderUuidString = clanSection.getString("leader");
+            if (leaderUuidString == null) {
+                plugin.getLogger().warning("[가문 관리] 클랜 '" + clanName + "'의 리더 UUID가 없습니다. 이 클랜을 건너뜁니다.");
+                continue;
+            }
+
+            Clan clan = new Clan(clanName, UUID.fromString(leaderUuidString), ChatColor.valueOf(clanSection.getString("color", "WHITE")));
             clanSection.getStringList("members").forEach(uuidStr -> clan.addMember(UUID.fromString(uuidStr)));
             // pylon-locations 로드
             ConfigurationSection pylonSection = clanSection.getConfigurationSection("pylon-locations");
@@ -104,9 +110,7 @@ public class ClanManager {
                 }
             }
             List<String> pendingUuids = clanSection.getStringList("pending-first-spawn");
-            if (pendingUuids != null) {
-                pendingUuids.forEach(uuidStr -> clan.addPendingFirstSpawn(UUID.fromString(uuidStr)));
-            }
+            pendingUuids.forEach(uuidStr -> clan.addPendingFirstSpawn(UUID.fromString(uuidStr)));
             clan.setLastGiftBoxTime(clanSection.getLong("last-giftbox-time"));
             clan.setLastPylonRecoveryTime(clanSection.getLong("last-pylon-recovery-time"));
             clan.setLastSubPylonRecoveryTime(clanSection.getLong("last-sub-pylon-recovery-time"));

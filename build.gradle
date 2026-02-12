@@ -4,7 +4,7 @@ plugins {
 }
 
 group = 'didi78579'
-version = '3.1-SNAPSHOT'
+version = '3.0-SNAPSHOT'
 
 repositories {
     mavenCentral()
@@ -52,4 +52,9 @@ processResources {
     filesMatching('paper-plugin.yml') {
         expand props
     }
+}
+
+tasks.jar {
+    archiveFileName = "DF_Plugin-${version}.jar"
+    destinationDirectory = file('C:/Users/CJS/Documents/ServerEngine/servers/server_529312781/plugins')
 }
